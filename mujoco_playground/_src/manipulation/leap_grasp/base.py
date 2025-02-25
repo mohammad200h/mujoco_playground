@@ -96,6 +96,8 @@ class LeapHandEnv(mjx_env.MjxEnv):
         for name in consts.FINGERTIP_NAMES
     ])
 
+
+
   # Accessors.
 
   @property
