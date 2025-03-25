@@ -48,10 +48,10 @@ logging.set_verbosity(logging.WARNING)
 # Define flags similar to the JAX script
 _ENV_NAME = flags.DEFINE_string(
     "env_name",
-    "BerkeleyHumanoidJoystickFlatTerrain",
+    "LeapCubeReorient",
     (
         "Name of the environment. One of: "
-        f"{', '.join(mujoco_playground.registry.ALL_ENVS)}"
+        f"{', '.join(mujoco_playground.registry.manipulation.ALL)}"
     ),
 )
 _LOAD_RUN_NAME = flags.DEFINE_string(

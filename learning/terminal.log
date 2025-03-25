@@ -1,0 +1,161 @@
+/usr/local/lib/python3.10/dist-packages/jax/_src/interpreters/xla.py:132: RuntimeWarning: overflow encountered in cast
+  return np.asarray(x, dtypes.canonicalize_dtype(x.dtype))
+2025-03-05 22:17:29.396320: E external/xla/xla/service/slow_operation_alarm.cc:73] Constant folding an instruction is taking > 1s:
+
+  %maximum.61 = f32[348,4096,3]{2,1,0} maximum(f32[348,4096,3]{2,0,1} %constant.7590, f32[348,4096,3]{2,0,1} %constant.7595), metadata={op_name="jit(reset)/jit(main)/vmap(forward)/fwd_position/max" source_file="/usr/local/lib/python3.10/dist-packages/mujoco/mjx/_src/collision_driver.py" source_line=288}
+
+This isn't necessarily a bug; constant-folding is inherently a trade-off between compilation time and speed at runtime. XLA has some guards that attempt to keep constant folding from taking too long, but fundamentally you'll always be able to come up with an input program that takes a long time.
+
+If you'd like to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+2025-03-05 22:17:33.829321: E external/xla/xla/service/slow_operation_alarm.cc:140] The operation took 5.433124996s
+Constant folding an instruction is taking > 1s:
+
+  %maximum.61 = f32[348,4096,3]{2,1,0} maximum(f32[348,4096,3]{2,0,1} %constant.7590, f32[348,4096,3]{2,0,1} %constant.7595), metadata={op_name="jit(reset)/jit(main)/vmap(forward)/fwd_position/max" source_file="/usr/local/lib/python3.10/dist-packages/mujoco/mjx/_src/collision_driver.py" source_line=288}
+
+This isn't necessarily a bug; constant-folding is inherently a trade-off between compilation time and speed at runtime. XLA has some guards that attempt to keep constant folding from taking too long, but fundamentally you'll always be able to come up with an input program that takes a long time.
+
+If you'd like to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+/usr/local/lib/python3.10/dist-packages/jax/_src/interpreters/xla.py:132: RuntimeWarning: overflow encountered in cast
+  return np.asarray(x, dtypes.canonicalize_dtype(x.dtype))
+2025-03-05 22:18:49.586664: E external/xla/xla/service/slow_operation_alarm.cc:73] Constant folding an instruction is taking > 2s:
+
+  %maximum.163 = f32[348,4096,3]{2,1,0} maximum(f32[348,4096,3]{2,0,1} %constant.11749, f32[348,4096,3]{2,0,1} %constant.11759), metadata={op_name="jit(step)/jit(main)/while/body/vmap(while)/body/step/forward/fwd_position/max" source_file="/usr/local/lib/python3.10/dist-packages/mujoco/mjx/_src/collision_driver.py" source_line=288}
+
+This isn't necessarily a bug; constant-folding is inherently a trade-off between compilation time and speed at runtime. XLA has some guards that attempt to keep constant folding from taking too long, but fundamentally you'll always be able to come up with an input program that takes a long time.
+
+If you'd like to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+2025-03-05 22:18:53.077356: E external/xla/xla/service/slow_operation_alarm.cc:140] The operation took 5.490801404s
+Constant folding an instruction is taking > 2s:
+
+  %maximum.163 = f32[348,4096,3]{2,1,0} maximum(f32[348,4096,3]{2,0,1} %constant.11749, f32[348,4096,3]{2,0,1} %constant.11759), metadata={op_name="jit(step)/jit(main)/while/body/vmap(while)/body/step/forward/fwd_position/max" source_file="/usr/local/lib/python3.10/dist-packages/mujoco/mjx/_src/collision_driver.py" source_line=288}
+
+This isn't necessarily a bug; constant-folding is inherently a trade-off between compilation time and speed at runtime. XLA has some guards that attempt to keep constant folding from taking too long, but fundamentally you'll always be able to come up with an input program that takes a long time.
+
+If you'd like to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+2025-03-05 22:20:07.647565: E external/xla/xla/service/slow_operation_alarm.cc:73] Constant folding an instruction is taking > 4s:
+
+  %maximum.163 = f32[348,4096,3]{2,1,0} maximum(f32[348,4096,3]{2,0,1} %constant.11749, f32[348,4096,3]{2,0,1} %constant.11759), metadata={op_name="jit(step)/jit(main)/while/body/vmap(while)/body/step/forward/fwd_position/max" source_file="/usr/local/lib/python3.10/dist-packages/mujoco/mjx/_src/collision_driver.py" source_line=288}
+
+This isn't necessarily a bug; constant-folding is inherently a trade-off between compilation time and speed at runtime. XLA has some guards that attempt to keep constant folding from taking too long, but fundamentally you'll always be able to come up with an input program that takes a long time.
+
+If you'd like to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+2025-03-05 22:20:08.992790: E external/xla/xla/service/slow_operation_alarm.cc:140] The operation took 5.345314978s
+Constant folding an instruction is taking > 4s:
+
+  %maximum.163 = f32[348,4096,3]{2,1,0} maximum(f32[348,4096,3]{2,0,1} %constant.11749, f32[348,4096,3]{2,0,1} %constant.11759), metadata={op_name="jit(step)/jit(main)/while/body/vmap(while)/body/step/forward/fwd_position/max" source_file="/usr/local/lib/python3.10/dist-packages/mujoco/mjx/_src/collision_driver.py" source_line=288}
+
+This isn't necessarily a bug; constant-folding is inherently a trade-off between compilation time and speed at runtime. XLA has some guards that attempt to keep constant folding from taking too long, but fundamentally you'll always be able to come up with an input program that takes a long time.
+
+If you'd like to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+Environment config:
+action_repeat: 1
+action_scale: 0.5
+ctrl_dt: 0.05
+ema_alpha: 1.0
+episode_length: 1000
+history_len: 1
+obs_noise:
+  level: 1.0
+  random_ori_injection_prob: 0.0
+  scales:
+    cube_ori: 0.1
+    cube_pos: 0.02
+    joint_pos: 0.05
+pert_config:
+  angular_velocity_pert:
+  - 0.0
+  - 0.5
+  enable: false
+  linear_velocity_pert:
+  - 0.0
+  - 3.0
+  pert_duration_steps:
+  - 1
+  - 100
+  pert_wait_steps:
+  - 60
+  - 150
+reward_config:
+  scales:
+    action_rate: -0.001
+    energy: -0.001
+    hand_pose: -0.5
+    joint_vel: 0.0
+    orientation: 5.0
+    position: 0.5
+    termination: -100.0
+  success_reward: 100.0
+sim_dt: 0.01
+success_threshold: 0.1
+
+Experiment name: LeapCubeReorient-20250305-221703
+Logs are being stored in: /home/mamad/mujocoplayground_ws/mujoco_playground/learning/logs/LeapCubeReorient-20250305-221703
+Checkpoint path: /home/mamad/mujocoplayground_ws/mujoco_playground/learning/logs/LeapCubeReorient-20250305-221703/checkpoints
+Device -- cuda:0
+Key device -- {CudaDevice(id=0)}
+obs_shape: {'privileged_state': (128,), 'state': (57,)}
+Asymmetric observation space
+JITing reset and step
+Done JITing reset and step
+Actor MLP: Sequential(
+  (0): Linear(in_features=57, out_features=512, bias=True)
+  (1): ELU(alpha=1.0)
+  (2): Linear(in_features=512, out_features=256, bias=True)
+  (3): ELU(alpha=1.0)
+  (4): Linear(in_features=256, out_features=128, bias=True)
+  (5): ELU(alpha=1.0)
+  (6): Linear(in_features=128, out_features=16, bias=True)
+)
+Critic MLP: Sequential(
+  (0): Linear(in_features=128, out_features=512, bias=True)
+  (1): ELU(alpha=1.0)
+  (2): Linear(in_features=512, out_features=256, bias=True)
+  (3): ELU(alpha=1.0)
+  (4): Linear(in_features=256, out_features=128, bias=True)
+  (5): ELU(alpha=1.0)
+  (6): Linear(in_features=128, out_features=1, bias=True)
+)
+learn::action::shape::torch.Size([4096, 16])
+learn::action::shape::torch.Size([4096, 16])
+learn::action::shape::torch.Size([4096, 16])
+learn::action::shape::torch.Size([4096, 16])
+learn::action::shape::torch.Size([4096, 16])
+learn::action::shape::torch.Size([4096, 16])
+learn::action::shape::torch.Size([4096, 16])
+learn::action::shape::torch.Size([4096, 16])
+learn::action::shape::torch.Size([4096, 16])
+learn::action::shape::torch.Size([4096, 16])
+learn::action::shape::torch.Size([4096, 16])
+learn::action::shape::torch.Size([4096, 16])
+learn::action::shape::torch.Size([4096, 16])
+learn::action::shape::torch.Size([4096, 16])
+learn::action::shape::torch.Size([4096, 16])
+learn::action::shape::torch.Size([4096, 16])
+learn::action::shape::torch.Size([4096, 16])
+learn::action::shape::torch.Size([4096, 16])
+learn::action::shape::torch.Size([4096, 16])
+learn::action::shape::torch.Size([4096, 16])
+learn::action::shape::torch.Size([4096, 16])
+learn::action::shape::torch.Size([4096, 16])
+learn::action::shape::torch.Size([4096, 16])
+learn::action::shape::torch.Size([4096, 16])
+Traceback (most recent call last):
+  File "/home/mamad/mujocoplayground_ws/mujoco_playground/learning/train_rsl_rl.py", line 247, in <module>
+    app.run(main)
+  File "/usr/local/lib/python3.10/dist-packages/absl/app.py", line 308, in run
+    _run_main(main, args)
+  File "/usr/local/lib/python3.10/dist-packages/absl/app.py", line 254, in _run_main
+    sys.exit(main(argv))
+  File "/home/mamad/mujocoplayground_ws/mujoco_playground/learning/train_rsl_rl.py", line 192, in main
+    runner.learn(
+  File "/home/mamad/mujocoplayground_ws/rsl_rl/rsl_rl/runners/on_policy_runner.py", line 211, in learn
+    mean_value_loss, mean_surrogate_loss, mean_entropy, mean_rnd_loss, mean_symmetry_loss = self.alg.update()
+  File "/home/mamad/mujocoplayground_ws/rsl_rl/rsl_rl/algorithms/ppo.py", line 351, in update
+    loss.backward()
+  File "/home/mamad/.local/lib/python3.10/site-packages/torch/_tensor.py", line 626, in backward
+    torch.autograd.backward(
+  File "/home/mamad/.local/lib/python3.10/site-packages/torch/autograd/__init__.py", line 347, in backward
+    _engine_run_backward(
+  File "/home/mamad/.local/lib/python3.10/site-packages/torch/autograd/graph.py", line 823, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 24.00 MiB. GPU 0 has a total capacity of 7.67 GiB of which 69.81 MiB is free. Process 65437 has 6.60 GiB memory in use. Of the allocated memory 493.18 MiB is allocated by PyTorch, and 32.82 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)

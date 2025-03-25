@@ -24,7 +24,10 @@ import mujoco
 from mujoco import mjx
 
 from mujoco_playground._src import mjx_env
+from mujoco_playground._src import collision
 from mujoco_playground._src.manipulation.leap_grasp import leap_grasp_constants as consts
+
+from typing import Literal
 
 
 def get_assets() -> Dict[str, bytes]:
@@ -60,6 +63,12 @@ class LeapHandEnv(mjx_env.MjxEnv):
     self._mjx_model = mjx.put_model(self._mj_model)
     self._xml_path = xml_path
 
+    # cube following trajectory
+    self.x_force_applied = False
+    self.desired_y_force = 0.1
+    self.force = 0.05
+
+
   # Sensor readings.
 
   def get_palm_position(self, data: mjx.Data) -> jax.Array:
@@ -83,18 +92,63 @@ class LeapHandEnv(mjx_env.MjxEnv):
   def get_cube_upvector(self, data: mjx.Data) -> jax.Array:
     return mjx_env.get_sensor_data(self.mj_model, data, "cube_upvector")
 
-  def get_cube_goal_orientation(self, data: mjx.Data) -> jax.Array:
-    return mjx_env.get_sensor_data(self.mj_model, data, "cube_goal_orientation")
-
-  def get_cube_goal_upvector(self, data: mjx.Data) -> jax.Array:
-    return mjx_env.get_sensor_data(self.mj_model, data, "cube_goal_upvector")
-
   def get_fingertip_positions(self, data: mjx.Data) -> jax.Array:
     """Get fingertip positions relative to the grasp site."""
     return jp.concatenate([
         mjx_env.get_sensor_data(self.mj_model, data, f"{name}_position")
         for name in consts.FINGERTIP_NAMES
     ])
+
+  # Contact
+  def there_is_contact_between_th_and_object(self, data: mjx.Data)-> jax.Array:
+
+    th_geoms = ["th_mp_collision","th_bs_collision_1","th_px_collision_1",
+                "th_ds_collision_1","th_tip"]
+    return jp.array([
+      collision.geoms_colliding(data, self._mj_model.geom(g_name).id,
+                                self._mj_model.geom("cube").id)
+      for g_name in th_geoms
+    ])
+
+  def there_is_contact_for_ff_mf_rf(self,finger:Literal["if", "mf", "rf"], data:mjx.Data)-> jax.Array:
+    prefixes = ["_bs_collision_1","_px_collision","_md_collision_1",
+                "_md_collision_5","_ds_collision_1","_tip"]
+    finger_geoms = [finger + prefix for prefix in prefixes]
+    return jp.array([
+      collision.geoms_colliding(data, self._mj_model.geom(g_name).id,
+                                self._mj_model.geom("cube").id)
+      for g_name in finger_geoms
+    ])
+
+  # Cube following trajectory
+  def get_cube_direction(self,data: mjx.Data):
+    cube_vel = mjx_env.get_sensor_data(self.mj_model , data , "cube_linvel" )
+    v = cube_vel / jp.linalg.norm(cube_vel) if jp.linalg.norm(cube_vel) > 0 else cube_vel
+
+    return v
+
+  def get_vector_pointing_to_palm(self, data: mjx.Data):
+    cube_pos = mjx_env.get_sensor_data(self.mj_model , data , "cube_position" )
+    palm_pos = mjx_env.get_sensor_data(self.mj_model , data , "palm_position" )
+    v = palm_pos - cube_pos
+    v = v / jp.linalg.norm(v) if jp.linalg.norm(v) > 0 else v
+
+    return v
+
+  def get_impulse(self):
+    # com = data.xipos[self._mj_model.geom("cube").id]
+    impulse = jp.array([self.desired_y_force,0,0,0,0,0])
+    xfrc_applied = jp.zeros(16)
+
+    return  jp.concatenate([xfrc_applied, impulse])
+
+  def head_toward_the_hand(self, data: mjx.Data):
+    t = data.time
+    if t > 2*self.dt:
+      data.qfrc_applied[:] = 0
+
+
+
 
 
 

@@ -1,0 +1,29 @@
+/home/mamad/.cache/pypoetry/virtualenvs/mujocoplayground-ws-up-IbqUe-py3.12/lib/python3.12/site-packages/jax/_src/interpreters/xla.py:132: RuntimeWarning: overflow encountered in cast
+  return np.asarray(x, dtypes.canonicalize_dtype(x.dtype))
+Traceback (most recent call last):
+  File "/home/mamad/mujocoplayground_ws/mujoco_playground/mujoco_playground/_src/manipulation/leap_grasp/run_grasp_env.py", line 49, in <module>
+    batched_data = jax.vmap(env.step)(batch_state,batch_action)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mamad/mujocoplayground_ws/mujoco_playground/mujoco_playground/_src/manipulation/leap_grasp/grasp.py", line 264, in step
+    qpos = jp.where(success[:, None], new_qpos, data.qpos)
+                    ~~~~~~~^^^^^^^^^
+  File "/home/mamad/.cache/pypoetry/virtualenvs/mujocoplayground-ws-up-IbqUe-py3.12/lib/python3.12/site-packages/jax/_src/numpy/array_methods.py", line 1061, in op
+    return getattr(self.aval, f"_{name}")(self, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mamad/.cache/pypoetry/virtualenvs/mujocoplayground-ws-up-IbqUe-py3.12/lib/python3.12/site-packages/jax/_src/numpy/array_methods.py", line 651, in _getitem
+    return lax_numpy._rewriting_take(self, item)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mamad/.cache/pypoetry/virtualenvs/mujocoplayground-ws-up-IbqUe-py3.12/lib/python3.12/site-packages/jax/_src/numpy/lax_numpy.py", line 11966, in _rewriting_take
+    return _gather(arr, treedef, static_idx, dynamic_idx, indices_are_sorted,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mamad/.cache/pypoetry/virtualenvs/mujocoplayground-ws-up-IbqUe-py3.12/lib/python3.12/site-packages/jax/_src/numpy/lax_numpy.py", line 11975, in _gather
+    indexer = _index_to_gather(shape(arr), idx)  # shared with _scatter_update
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mamad/.cache/pypoetry/virtualenvs/mujocoplayground-ws-up-IbqUe-py3.12/lib/python3.12/site-packages/jax/_src/numpy/lax_numpy.py", line 12091, in _index_to_gather
+    idx = _canonicalize_tuple_index(len(x_shape), idx)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mamad/.cache/pypoetry/virtualenvs/mujocoplayground-ws-up-IbqUe-py3.12/lib/python3.12/site-packages/jax/_src/numpy/lax_numpy.py", line 12410, in _canonicalize_tuple_index
+    raise IndexError(
+IndexError: Too many indices: 0-dimensional array indexed with 1 regular index.
+--------------------
+For simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these.
