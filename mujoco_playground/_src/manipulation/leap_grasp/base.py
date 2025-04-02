@@ -64,7 +64,7 @@ class LeapHandEnv(mjx_env.MjxEnv):
     self._xml_path = xml_path
 
     # cube following trajectory
-    self.x_force_applied = False
+    self.impulse_applied = False
     self.desired_y_force = 0.1
     self.force = 0.05
 
@@ -99,6 +99,19 @@ class LeapHandEnv(mjx_env.MjxEnv):
         for name in consts.FINGERTIP_NAMES
     ])
 
+  def get_hand_joint_velocity(self, data: mjx.Data) -> jax.Array:
+    return jp.concatenate([
+      mjx_env.get_sensor_data(self.mj_model, data, f"{name}_velocity_sensor")
+      for name in consts.JOINT_NAMES
+    ])
+
+  def get_hand_joint_torque(self, data: mjx.Data) -> jax.Array:
+    return jp.concatenate([
+      mjx_env.get_sensor_data(self.mj_model, data, f"{name}_torque_sensor")
+      for name in consts.JOINT_NAMES
+    ])
+
+
   # Contact
   def there_is_contact_between_th_and_object(self, data: mjx.Data)-> jax.Array:
 
@@ -123,7 +136,8 @@ class LeapHandEnv(mjx_env.MjxEnv):
   # Cube following trajectory
   def get_cube_direction(self,data: mjx.Data):
     cube_vel = mjx_env.get_sensor_data(self.mj_model , data , "cube_linvel" )
-    v = cube_vel / jp.linalg.norm(cube_vel) if jp.linalg.norm(cube_vel) > 0 else cube_vel
+    norm_cube_vel = jp.linalg.norm(cube_vel)
+    v = jp.where(norm_cube_vel > 0, cube_vel / norm_cube_vel, cube_vel)
 
     return v
 
@@ -131,7 +145,8 @@ class LeapHandEnv(mjx_env.MjxEnv):
     cube_pos = mjx_env.get_sensor_data(self.mj_model , data , "cube_position" )
     palm_pos = mjx_env.get_sensor_data(self.mj_model , data , "palm_position" )
     v = palm_pos - cube_pos
-    v = v / jp.linalg.norm(v) if jp.linalg.norm(v) > 0 else v
+    norm_v = jp.linalg.norm(v)
+    v = jp.where(norm_v > 0, v / norm_v, v)
 
     return v
 
@@ -139,18 +154,38 @@ class LeapHandEnv(mjx_env.MjxEnv):
     # com = data.xipos[self._mj_model.geom("cube").id]
     impulse = jp.array([self.desired_y_force,0,0,0,0,0])
     xfrc_applied = jp.zeros(16)
-
-    return  jp.concatenate([xfrc_applied, impulse])
+    if not self.impulse_applied:
+      self.impulse_applied = True
+      return  jp.concatenate([xfrc_applied, impulse])
+    return jp.zeros(22)
 
   def head_toward_the_hand(self, data: mjx.Data):
-    t = data.time
-    if t > 2*self.dt:
-      data.qfrc_applied[:] = 0
+    vector_toward_hand = self.get_vector_pointing_to_palm(data)
+    cube_heading = self.get_cube_direction(data)
 
+    dot_product = jp.dot(vector_toward_hand, cube_heading)
 
+    # Ensure norms are nonzero using jp.maximum to avoid division by zero
+    norm_vector = jp.maximum(jp.linalg.norm(vector_toward_hand), 1e-6)
+    norm_heading = jp.maximum(jp.linalg.norm(cube_heading), 1e-6)
 
+    # Compute cosine theta safely
+    cos_theta = dot_product / (norm_vector * norm_heading)
+    cos_theta = jp.clip(cos_theta, -1.0, 1.0)  # Keep it in valid range for arccos
+    angle = jp.arccos(cos_theta)
 
+    # Check if angle is significant
+    apply_force = angle > 1e-3  # Small threshold to avoid numerical noise
 
+    # Compute force and torque
+    force = vector_toward_hand * self.force
+    torque = jp.zeros(3)
+    impulse = jp.concatenate([force, torque])
+
+    xfrc_applied = jp.zeros(16)
+
+    # Use jp.where instead of an if statement
+    return jp.where(apply_force, jp.concatenate([xfrc_applied, impulse]), jp.zeros(22))
 
   # Accessors.
 

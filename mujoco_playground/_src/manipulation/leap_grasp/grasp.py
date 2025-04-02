@@ -32,6 +32,8 @@ from mujoco_playground._src.manipulation.leap_grasp import base as leap_hand_bas
 from mujoco_playground._src.manipulation.leap_grasp import leap_grasp_constants as consts
 
 
+cube_initial_location = [-0.3, 0.0, 0.2]
+
 def default_config() -> config_dict.ConfigDict:
   return config_dict.create(
       ctrl_dt=0.05,
@@ -53,12 +55,10 @@ def default_config() -> config_dict.ConfigDict:
       ),
       reward_config=config_dict.create(
           scales=config_dict.create(
-              opposing_force=5.0,
-              firm_grasp=0.5,
+              cube_vel_joint_torque=1,
               termination=-100.0,
-              action_rate=-0.001,
-              joint_vel=0.0,
-              energy=-1e-3,
+              joint_vel_joint_torque = 1,
+
           ),
           success_reward=100.0,
       ),
@@ -79,12 +79,16 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
       self,
       config: config_dict.ConfigDict = default_config(),
       config_overrides: Optional[Dict[str, Union[str, int, list[Any]]]] = None,
+      reward_type = "joint_vel_joint_torque"
   ):
     super().__init__(
-        xml_path=consts.CUBE_XML.as_posix(),
-        config=config,
-        config_overrides=config_overrides,
+      xml_path=consts.CUBE_XML.as_posix(),
+      config=config,
+      config_overrides=config_overrides,
     )
+    # Setting reward mode
+    self.reward_type = reward_type
+
     self._post_init()
 
   def _post_init(self) -> None:
@@ -117,7 +121,7 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
 
     # Randomize the cube pose.
     rng, p_rng, quat_rng = jax.random.split(rng, 3)
-    start_pos = jp.array([-1, 0.0, 0.2]) + jax.random.uniform(
+    start_pos = jp.array(cube_initial_location) + jax.random.uniform(
         p_rng, (3,), minval=-0.01, maxval=0.01
     )
     start_quat = leap_hand_base.uniform_quat(quat_rng)
@@ -161,6 +165,7 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
     info = {
         "rng": rng,
         "step": 0,
+        "episode_step":0,
         "steps_since_last_success": 0,
         "success_count": 0,
         "last_act": jp.zeros(self.mjx_model.nu),
@@ -203,9 +208,12 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
     return actions, rng
 
   def step(self, state: mjx_env.State, action: jax.Array) -> mjx_env.State:
-
-    data = state.data.replace(qfrc_applied= self.get_impulse())
-    state = state.replace(data=data)
+    if not self.impulse_applied:
+      data = state.data.replace(qfrc_applied= self.get_impulse())
+      state = state.replace(data=data)
+    else:
+      data = state.data.replace(qfrc_applied= self.head_toward_the_hand(state.data))
+      state = state.replace(data=data)
 
 
     # Apply control and step the physics.
@@ -224,25 +232,23 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
         self.mjx_model, state.data, motor_targets, self.n_substeps
     )
 
-
-
-
     state.info["motor_targets"] = motor_targets
 
     # Power Grasp should reduce acceleration and velocity of cube to zero
     # It should also have contact with Thumb and one other finger
-    success = (self._cube_linear_vel_is_zero(data) +
-               self._cube_angular_vel_is_zero(data) +
-               self._there_is_a_contact_with_thumb(data) +
-               self._there_is_a_contact_with_any_of_ff_mf_rf(data)
-    )
+    # success = (self._cube_linear_vel_is_zero(data) +
+    #            self._cube_angular_vel_is_zero(data) +
+    #            self._there_is_a_contact_with_thumb(data) +
+    #            self._there_is_a_contact_with_any_of_ff_mf_rf(data)
+    # )
+    # success = 0.0
 
-    state.info["steps_since_last_success"] = jp.where(
-        success, 0, state.info["steps_since_last_success"] + 1
-    )
-    state.info["success_count"] = jp.where(
-        success, state.info["success_count"] + 1, state.info["success_count"]
-    )
+    # state.info["steps_since_last_success"] = jp.where(
+    #     success, 0, state.info["steps_since_last_success"] + 1
+    # )
+    # state.info["success_count"] = jp.where(
+    #     success, state.info["success_count"] + 1, state.info["success_count"]
+    # )
     state.metrics["steps_since_last_success"] = state.info[
         "steps_since_last_success"
     ]
@@ -254,9 +260,7 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
 
     # TODO: I need to write reward function
     rewards = self._get_reward(data, action, state.info, state.metrics, done)
-    rewards = {
-        k: v * self._config.reward_config.scales[k] for k, v in rewards.items()
-    }
+
     reward = sum(rewards.values()) * self.dt  # pylint: disable=redefined-outer-name
 
 
@@ -264,16 +268,17 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
     state.info["rng"], reset_rng = jax.random.split(state.info["rng"])
     new_qpos,new_qvel = self.generate_new_pose_and_velocity(reset_rng)
 
-
-    qpos = jp.where(success, new_qpos, data.qpos)
-    qvel = jp.where(success, new_qvel, data.qvel)
-    data = data.replace(qpos=jp.array(qpos))
-    data = data.replace(qvel=jp.array(qvel))
-    state.metrics["reward/success"] = success.astype(float)
-    reward += success * self._config.reward_config.success_reward
+    # qpos = jp.where(success, new_qpos, data.qpos)
+    # qvel = jp.where(success, new_qvel, data.qvel)
+    # data = data.replace(qpos=jp.array(qpos))
+    # data = data.replace(qvel=jp.array(qvel))
+    # state.metrics["reward/success"] = success.astype(float)
+    # reward += success * self._config.reward_config.success_reward
 
     # Update info and metrics.
     state.info["step"] += 1
+    state.info["episode_step"] += 1
+
     state.info["last_last_act"] = state.info["last_act"]
     state.info["last_act"] = action
     for k, v in rewards.items():
@@ -387,36 +392,62 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
       metrics: dict[str, Any],
       done: jax.Array,
   ) -> dict[str, jax.Array]:
-    del done, metrics  # Unused.
+    del done, metrics, info, action  # Unused.
 
-    terminated = self._get_termination(data, info)
+    if self.reward_type == "joint_vel_joint_torque":
 
-    return {
-        # Add reward for Thumb and any other finger touching
-        "opposing_force":self.opposing_force_reward(data),
-        # Add reward for cube velocity being zero
-        "firm_grasp":self.cube_velocity_is_zero(data),
-        # Keep these
-        "termination": terminated,
-        "action_rate": self._cost_action_rate(
-            action, info["last_act"], info["last_last_act"]
-        ),
-        "joint_vel": self._cost_joint_vel(data),
-        "energy": self._cost_energy(
-            data.qvel[self._hand_dqids], data.actuator_force
-        ),
+      rewards = {
+        "joint_vel_joint_torque":self.joint_vel_joint_torque_reward(data),
+
+      }
+    elif self.reward_type == "cube_vel_joint_torque":
+      rewards = {
+        "cube_vel_joint_torque": self.cube_vel_joint_torque_reward(data),
     }
 
-  def _cost_energy(
-      self, qvel: jax.Array, qfrc_actuator: jax.Array
-  ) -> jax.Array:
-    return jp.sum(jp.abs(qvel) * jp.abs(qfrc_actuator))
+    return rewards
+
+
+  def joint_vel_joint_torque_reward_base(self,data:mjx.Data, k:float):
+    # exp(-k * dq^2) * joint_torque^2
+    joint_torque = self.get_hand_joint_torque(data)
+
+    dq = self.get_hand_joint_velocity(data)
+
+    return jp.mean(jp.exp(-k * dq**2) * joint_torque**2)
+
+  def joint_vel_joint_torque_reward(self, data:mjx.Data):
+    # joint velocity is low and torque is high due to applying force onto object
+
+    k = self._config.reward_config.scales["joint_vel_joint_torque"]
+
+    return self.joint_vel_joint_torque_reward_base(data, k)
+
+  def cube_vel_joint_torque_reward_base(self, data:mjx.Data, k:float ):
+    # exp(-k*(object_palm_velocity)^2) * joint_torque^2
+    cube_velocity = self.get_cube_linvel(data)
+    joint_torque = self.get_hand_joint_torque(data)
+
+    k = self._config.reward_config.scales["cube_vel_joint_torque"]
+    v = jp.linalg.norm(cube_velocity)
+
+    return jp.mean(jp.exp(-k * v**2) * joint_torque**2)
+
+  def cube_vel_joint_torque_reward(self, data:mjx.Data):
+    # Cube velocity is high since it has not been grasped
+    # Hand torque and joint velocity is high since it can move freely
+    # since its not applying any force anywhere
+
+    k = self._config.reward_config.scales["cube_vel_joint_torque"]
+
+    return self.cube_vel_joint_torque_reward_base(data, k)
 
   def _cube_orientation_error(self, data: mjx.Data):
     cube_ori = self.get_cube_orientation(data)
     cube_goal_ori = self.get_cube_goal_orientation(data)
     quat_diff = math.quat_mul(cube_ori, math.quat_inv(cube_goal_ori))
     quat_diff = math.normalize(quat_diff)
+
     return 2.0 * jp.asin(jp.clip(math.norm(quat_diff[1:]), a_max=1.0))
 
   def _cube_linear_vel_is_zero(self,data: mjx.Data):
@@ -436,7 +467,7 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
 
     # Randomize the cube pose.
     rng, p_rng, quat_rng = jax.random.split(rng, 3)
-    start_pos = jp.array([-1, 0.0, 0.2]) + jax.random.uniform(
+    start_pos = jp.array(cube_initial_location) + jax.random.uniform(
         p_rng, (3,), minval=-0.01, maxval=0.01
     )
 
@@ -447,7 +478,6 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
     qpos = jp.concatenate([q_hand, q_cube])
     qvel = jp.concatenate([v_hand, v_cube])
     return qpos, qvel
-
 
   def _cube_angular_vel_is_zero(self, data:mjx.Data):
     velocity_vector =  self.get_cube_angvel(data)
@@ -470,30 +500,13 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
   def opposing_force_reward(self, data:mjx.Data):
     sum = self._there_is_a_contact_with_thumb(data) + self._there_is_a_contact_with_any_of_ff_mf_rf(data)
 
-    return  sum/2 == 1
+    return  (sum/2 == 1).astype(jp.float32)
 
 
   def cube_velocity_is_zero(self, data:mjx.Data):
     sum = self._cube_linear_vel_is_zero(data) + self._cube_angular_vel_is_zero(data)
 
-    return sum/2 == 1
-
-
-
-
-  def _cost_action_rate(
-      self, act: jax.Array, last_act: jax.Array, last_last_act: jax.Array
-  ) -> jax.Array:
-    c1 = jp.sum(jp.square(act - last_act))
-    c2 = jp.sum(jp.square(act - 2 * last_act + last_last_act))
-    return c1 + c2
-
-  def _cost_joint_vel(self, data: mjx.Data) -> jax.Array:
-    max_velocity = 5.0
-    vel_tolerance = 1.0
-    hand_qvel = data.qvel[self._hand_dqids]
-    return jp.sum((hand_qvel / (max_velocity - vel_tolerance)) ** 2)
-
+    return (sum/2 == 1).astype(jp.float32)
   # Perturbation.
 
   def _maybe_apply_perturbation(
@@ -531,7 +544,6 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
     state.info["last_pert_step"] = last_pert_step
     data = state.data.replace(xfrc_applied=xfrc)
     return state.replace(data=data)
-
 
 def domain_randomize(model: mjx.Model, rng: jax.Array):
   mj_model = CubeGrasp().mj_model

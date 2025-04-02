@@ -21,7 +21,7 @@
   </asset>
 
   <worldbody>
-    <camera name="side" pos="-0.183 0.396 0.296" xyaxes="-0.783 -0.622 -0.000 0.332 -0.419 0.845"/>
+    <camera name="side" pos="-0.8 0.5 0.5" xyaxes="-0.783 -0.622 -0.000 0.332 -0.419 0.845"/>
     <geom name="floor" pos="0 0 -0.25" size="0 0 0.01" type="plane" material="groundplane" contype="2" conaffinity="2"/>
 
   </worldbody>
@@ -48,7 +48,41 @@
     <touch site="mf_tip"/>
     <touch site="rf_tip"/>
 
+     <!-- joint torque. -->
+    <jointactuatorfrc joint="if_mcp" name="if_mcp_torque_sensor"/>
+    <jointactuatorfrc joint="if_rot" name="if_rot_torque_sensor"/>
+    <jointactuatorfrc joint="if_pip" name="if_pip_torque_sensor"/>
+    <jointactuatorfrc joint="if_dip" name="if_dip_torque_sensor"/>
+    <jointactuatorfrc joint="mf_mcp" name="mf_mcp_torque_sensor"/>
+    <jointactuatorfrc joint="mf_rot" name="mf_rot_torque_sensor"/>
+    <jointactuatorfrc joint="mf_pip" name="mf_pip_torque_sensor"/>
+    <jointactuatorfrc joint="mf_dip" name="mf_dip_torque_sensor"/>
+    <jointactuatorfrc joint="rf_mcp" name="rf_mcp_torque_sensor"/>
+    <jointactuatorfrc joint="rf_rot" name="rf_rot_torque_sensor"/>
+    <jointactuatorfrc joint="rf_pip" name="rf_pip_torque_sensor"/>
+    <jointactuatorfrc joint="rf_dip" name="rf_dip_torque_sensor"/>
+    <jointactuatorfrc joint="th_cmc" name="th_cmc_torque_sensor"/>
+    <jointactuatorfrc joint="th_axl" name="th_axl_torque_sensor"/>
+    <jointactuatorfrc joint="th_mcp" name="th_mcp_torque_sensor"/>
+    <jointactuatorfrc joint="th_ipl" name="th_ipl_torque_sensor"/>
 
+    <!-- joint vel. -->
+    <jointvel joint="if_mcp" name="if_mcp_velocity_sensor"/>
+    <jointvel joint="if_rot" name="if_rot_velocity_sensor"/>
+    <jointvel joint="if_pip" name="if_pip_velocity_sensor"/>
+    <jointvel joint="if_dip" name="if_dip_velocity_sensor"/>
+    <jointvel joint="mf_mcp" name="mf_mcp_velocity_sensor"/>
+    <jointvel joint="mf_rot" name="mf_rot_velocity_sensor"/>
+    <jointvel joint="mf_pip" name="mf_pip_velocity_sensor"/>
+    <jointvel joint="mf_dip" name="mf_dip_velocity_sensor"/>
+    <jointvel joint="rf_mcp" name="rf_mcp_velocity_sensor"/>
+    <jointvel joint="rf_rot" name="rf_rot_velocity_sensor"/>
+    <jointvel joint="rf_pip" name="rf_pip_velocity_sensor"/>
+    <jointvel joint="rf_dip" name="rf_dip_velocity_sensor"/>
+    <jointvel joint="th_cmc" name="th_cmc_velocity_sensor"/>
+    <jointvel joint="th_axl" name="th_axl_velocity_sensor"/>
+    <jointvel joint="th_mcp" name="th_mcp_velocity_sensor"/>
+    <jointvel joint="th_ipl" name="th_ipl_velocity_sensor"/>
 
 
 
@@ -58,7 +92,7 @@
     <key name="home"
       qpos="
       0 0 0 0 0 0 0 0 0
-      0 0 0 0 0 0 0 -1
+      0 0 0 0 0 0 0 -0.3
       0 0.2 1 0 0 0"
       ctrl="
       0.8 0 0.8 0.8

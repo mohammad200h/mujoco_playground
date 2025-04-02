@@ -63,11 +63,29 @@ if __name__ == "__main__":
   #   print(f"{f_external}")
 
 
+  ############ reward function testing #######
+  # rng = jax.random.PRNGKey(49)
+  # num_env = 2
+  # rest_rng,action_rng = jax.random.split(rng, (2,num_env))
+
+  # batch_state = jax.vmap(env.reset)(rest_rng)
+  # batch_action = jax.vmap(lambda rng:env.get_random_action(rng)[0])(action_rng)
+  # batched_state = jax.vmap(env.step)(batch_state,batch_action)
+
+
+  # hand_open_reward = jax.vmap(env.keep_hand_open_reward)(batch_state.data)
+
+  # firm_grasp_reward = jax.vmap(env.firm_grasp_reward)(batch_state.data)
+
+  # print(firm_grasp_reward)
+
+
   ############# rendering #############
   jit_reset = jax.jit(env.reset)
   jit_step = jax.jit(env.step)
   get_random_action = jax.jit(lambda rng:env.get_random_action(rng)[0])
-#
+  get_open_action = jax.jit(lambda: jp.zeros(16))
+
   rng = jax.random.PRNGKey(42)
   rest_rng,a_rng = jax.random.split(rng)
 
@@ -79,18 +97,16 @@ if __name__ == "__main__":
   for _ in range(n_episodes):
       state = jit_reset(rest_rng)
       episode_rollout = [state]  # Store episode states separately
-
-      for _ in range(100):
+      for _ in range(200):
           act_rng, a_rng = jax.random.split(a_rng)
-          ctrl =   get_random_action(act_rng)
+          ctrl = get_open_action()
           state = jit_step(state, ctrl)
           episode_rollout.append(state)
-
       rollout.extend(episode_rollout)  # Add to the main rollout list
 
 
   render_every = 1
-  frames = env.render(rollout[::render_every])
+  frames = env.render(trajectory = rollout[::render_every],camera = "side")
   rewards = [s.reward for s in rollout]
 
 
@@ -101,10 +117,6 @@ if __name__ == "__main__":
             break
     cv2.destroyAllWindows()
 
-  display_video(frames, fps=1.0 / env.dt / render_every)
-
-
-
   video_filename = "leap.mp4"
   fps = 1.0 / env.dt / render_every  # Frame rate based on the environment's timestep
   frame_size = (frames[0].shape[1], frames[0].shape[0])  # Width, Height
@@ -112,6 +124,8 @@ if __name__ == "__main__":
 
   fourcc = cv2.VideoWriter_fourcc(*"mp4v")  # Codec for .mp4 format
   video_writer = cv2.VideoWriter(video_filename, fourcc, fps, frame_size)
+
+  display_video(frames, fps=1.0 / env.dt / render_every)
 
 
   for frame in frames:
