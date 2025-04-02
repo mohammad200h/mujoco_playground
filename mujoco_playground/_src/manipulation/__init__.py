@@ -76,9 +76,10 @@ _randomizer = {
 
 }
 
+
 def __getattr__(name):
-  if name == "ALL":
-    return list(_envs.keys())
+  if name == "ALL_ENVS":
+    return tuple(_envs.keys())
   raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
 
