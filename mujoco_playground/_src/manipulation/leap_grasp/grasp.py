@@ -32,6 +32,14 @@ from mujoco_playground._src.manipulation.leap_grasp import base as leap_hand_bas
 from mujoco_playground._src.manipulation.leap_grasp import leap_grasp_constants as consts
 
 
+# from enum import Enum
+
+# class RewardType(Enum):
+#     JOINT_VEL_JOINT_TORQUE = "joint_vel_joint_torque"
+#     CUBE_VEL_JOINT_TORQUE = "cube_vel_joint_torque"
+#     JOINT_VEL_JOINT_TORQUE_DISTANCE_DEPENDENT = "joint_vel_joint_torque_distance_dependent"
+
+
 cube_initial_location = [-0.3, 0.0, 0.2]
 
 def default_config() -> config_dict.ConfigDict:
@@ -58,6 +66,8 @@ def default_config() -> config_dict.ConfigDict:
               cube_vel_joint_torque=1,
               termination=-100.0,
               joint_vel_joint_torque = 1,
+              joint_vel_joint_torque_distance_dependent = 1
+
 
           ),
           success_reward=100.0,
@@ -79,7 +89,7 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
       self,
       config: config_dict.ConfigDict = default_config(),
       config_overrides: Optional[Dict[str, Union[str, int, list[Any]]]] = None,
-      reward_type = "joint_vel_joint_torque"
+      reward_type = "joint_vel_joint_torque_distance_dependent"
   ):
     super().__init__(
       xml_path=consts.CUBE_XML.as_posix(),
@@ -397,24 +407,49 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
     if self.reward_type == "joint_vel_joint_torque":
 
       rewards = {
-        "joint_vel_joint_torque":self.joint_vel_joint_torque_reward(data),
+         "joint_vel_joint_torque" :self.joint_vel_joint_torque_reward(data),
 
       }
     elif self.reward_type == "cube_vel_joint_torque":
       rewards = {
         "cube_vel_joint_torque": self.cube_vel_joint_torque_reward(data),
-    }
+      }
+    elif self.reward_type =="joint_vel_joint_torque_distance_dependent":
+      rewards = {
+       "joint_vel_joint_torque_distance_dependent":self.joint_vel_joint_torque_distance_dependent_reward(data),
+      }
 
     return rewards
+
+  def joint_vel_joint_torque_distance_dependent_reward_base(self,data:mjx.Data, k: float):
+    # exp(-k*dq)* | tau| ^2
+    joint_torques = self.get_hand_joint_torque(data)
+
+    joint_torque = jp.linalg.norm(joint_torques)
+    dq = self.get_hand_joint_velocity(data)
+
+    return jp.mean(jp.exp(-k * dq**2) * joint_torque**2)
+
+  def joint_vel_joint_torque_distance_dependent_reward(self, data: mjx.Data):
+    k = self._config.reward_config.scales["joint_vel_joint_torque_distance_dependent"]
+
+    if self.cube_is_close_enough():
+      return self.joint_vel_joint_torque_distance_dependent_reward_base(data, k)
+    else:
+      return 0.0
+
+  def cube_is_close_enough(self,data: mjx.Data):
+    dist =  self.get_palm_position(data) - self.get_cube_position(data)
+    return jp.linalg.norm(dist) < 0.05
 
 
   def joint_vel_joint_torque_reward_base(self,data:mjx.Data, k:float):
     # exp(-k * dq^2) * joint_torque^2
-    joint_torque = self.get_hand_joint_torque(data)
+    joint_torques = self.get_hand_joint_torque(data)
 
     dq = self.get_hand_joint_velocity(data)
 
-    return jp.mean(jp.exp(-k * dq**2) * joint_torque**2)
+    return jp.mean(jp.exp(-k * dq**2) * joint_torques**2)
 
   def joint_vel_joint_torque_reward(self, data:mjx.Data):
     # joint velocity is low and torque is high due to applying force onto object
