@@ -1,6 +1,7 @@
 <mujoco model="leap_scene">
   <include file="leap_rh_mjx.xml"/>
   <include file="reorientation_cube.xml"/>
+  <include file="flag.xml"/>
 
   <statistic center="0.15 0 0" extent="0.4" meansize="0.01"/>
 
@@ -98,6 +99,18 @@
       0.8 0 0.8 0.8
       0.8 0 0.8 0.8
       0.8 0 0.8 0.8
-      0.8 0.8 0.8 0"/>
+      0.8 0.8 0.8 0"
+      mpos ="0 0.15 0.2"
+      mquat="0 0.707 0 0.707"
+    />
+    <key name="close_enough"
+      mpos ="0 0.15 0.2"
+      mquat="0 -0.707 0 0.707"
+    />
+    <key name= "far"
+      mpos ="0 0.15 0.2"
+      mquat="0 0.707 0 0.707"
+    />
+
   </keyframe>
 </mujoco>

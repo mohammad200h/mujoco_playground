@@ -32,12 +32,12 @@ from mujoco_playground._src.manipulation.leap_grasp import base as leap_hand_bas
 from mujoco_playground._src.manipulation.leap_grasp import leap_grasp_constants as consts
 
 
-# from enum import Enum
+from enum import Enum
 
-# class RewardType(Enum):
-#     JOINT_VEL_JOINT_TORQUE = "joint_vel_joint_torque"
-#     CUBE_VEL_JOINT_TORQUE = "cube_vel_joint_torque"
-#     JOINT_VEL_JOINT_TORQUE_DISTANCE_DEPENDENT = "joint_vel_joint_torque_distance_dependent"
+class RewardType(Enum):
+    JOINT_VEL_JOINT_TORQUE = "joint_vel_joint_torque"
+    CUBE_VEL_JOINT_TORQUE = "cube_vel_joint_torque"
+    JOINT_VEL_JOINT_TORQUE_DISTANCE_DEPENDENT = "joint_vel_joint_torque_distance_dependent"
 
 
 cube_initial_location = [-0.3, 0.0, 0.2]
@@ -89,7 +89,7 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
       self,
       config: config_dict.ConfigDict = default_config(),
       config_overrides: Optional[Dict[str, Union[str, int, list[Any]]]] = None,
-      reward_type = "joint_vel_joint_torque_distance_dependent"
+      reward_type:RewardType = RewardType.JOINT_VEL_JOINT_TORQUE_DISTANCE_DEPENDENT
   ):
     super().__init__(
       xml_path=consts.CUBE_XML.as_posix(),
@@ -104,6 +104,13 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
   def _post_init(self) -> None:
     home_key = self._mj_model.keyframe("home")
     self._init_q = jp.array(home_key.qpos)
+
+    self._mocap_quat_close_enough = jp.array( self._mj_model.keyframe("close_enough").mquat)
+    self._mocap_quat_far = jp.array( self._mj_model.keyframe("far").mquat)
+
+    self._mocap_pos_close_enough = jp.array( self._mj_model.keyframe("close_enough").mpos)
+    self._mocap_pos_far = jp.array( self._mj_model.keyframe("far").mpos)
+
     self._lowers = self._mj_model.actuator_ctrlrange[:, 0]
     self._uppers = self._mj_model.actuator_ctrlrange[:, 1]
     self._hand_qids = mjx_env.get_qpos_ids(self.mj_model, consts.JOINT_NAMES)
@@ -145,6 +152,9 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
         qpos=qpos,
         ctrl=q_hand,
         qvel=qvel,
+        mocap_quat=self._mocap_quat_far,
+        mocap_pos = self._mocap_pos_far
+
     )
 
     rng, pert1, pert2, pert3 = jax.random.split(rng, 4)
@@ -226,6 +236,24 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
       state = state.replace(data=data)
 
 
+    mocap_quat = jp.where(
+      self.cube_is_close_enough(data),
+      self._mocap_quat_close_enough,
+      state.data.mocap_quat
+    )
+    data = state.data.replace(mocap_quat= mocap_quat)
+    state = state.replace(data=data)
+    mocap_pos = jp.where(
+      self.cube_is_close_enough(data),
+      self._mocap_pos_close_enough,
+      state.data.mocap_pos
+    )
+    data = state.data.replace(mocap_pos= mocap_pos)
+    state = state.replace(data=data)
+
+
+
+
     # Apply control and step the physics.
     delta = action * self._config.action_scale
     motor_targets = state.data.ctrl + delta
@@ -298,7 +326,6 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
     state = state.replace(data=data, obs=obs, reward=reward, done=done)
 
     return state
-
   def _get_termination(self, data: mjx.Data, info: dict[str, Any]) -> jax.Array:
     del info  # Unused.
 
@@ -404,19 +431,19 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
   ) -> dict[str, jax.Array]:
     del done, metrics, info, action  # Unused.
 
-    if self.reward_type == "joint_vel_joint_torque":
+    if self.reward_type == RewardType.JOINT_VEL_JOINT_TORQUE:
 
       rewards = {
-         "joint_vel_joint_torque" :self.joint_vel_joint_torque_reward(data),
+         RewardType.JOINT_VEL_JOINT_TORQUE.value :self.joint_vel_joint_torque_reward(data),
 
       }
-    elif self.reward_type == "cube_vel_joint_torque":
+    elif self.reward_type == RewardType.CUBE_VEL_JOINT_TORQUE:
       rewards = {
-        "cube_vel_joint_torque": self.cube_vel_joint_torque_reward(data),
+        RewardType.CUBE_VEL_JOINT_TORQUE.value: self.cube_vel_joint_torque_reward(data),
       }
-    elif self.reward_type =="joint_vel_joint_torque_distance_dependent":
+    elif self.reward_type == RewardType.JOINT_VEL_JOINT_TORQUE_DISTANCE_DEPENDENT:
       rewards = {
-       "joint_vel_joint_torque_distance_dependent":self.joint_vel_joint_torque_distance_dependent_reward(data),
+        RewardType.JOINT_VEL_JOINT_TORQUE_DISTANCE_DEPENDENT.value:self.joint_vel_joint_torque_distance_dependent_reward(data),
       }
 
     return rewards
@@ -431,17 +458,14 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
     return jp.mean(jp.exp(-k * dq**2) * joint_torque**2)
 
   def joint_vel_joint_torque_distance_dependent_reward(self, data: mjx.Data):
-    k = self._config.reward_config.scales["joint_vel_joint_torque_distance_dependent"]
+    k = self._config.reward_config.scales[RewardType.JOINT_VEL_JOINT_TORQUE_DISTANCE_DEPENDENT.value]
+    reward = self.joint_vel_joint_torque_distance_dependent_reward_base(data, k)
 
-    if self.cube_is_close_enough():
-      return self.joint_vel_joint_torque_distance_dependent_reward_base(data, k)
-    else:
-      return 0.0
+    return jp.where(self.cube_is_close_enough(data), reward, 0.0)
 
   def cube_is_close_enough(self,data: mjx.Data):
     dist =  self.get_palm_position(data) - self.get_cube_position(data)
-    return jp.linalg.norm(dist) < 0.05
-
+    return jp.linalg.norm(dist) < 0.03
 
   def joint_vel_joint_torque_reward_base(self,data:mjx.Data, k:float):
     # exp(-k * dq^2) * joint_torque^2
@@ -454,7 +478,7 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
   def joint_vel_joint_torque_reward(self, data:mjx.Data):
     # joint velocity is low and torque is high due to applying force onto object
 
-    k = self._config.reward_config.scales["joint_vel_joint_torque"]
+    k = self._config.reward_config.scales[RewardType.JOINT_VEL_JOINT_TORQUE.value]
 
     return self.joint_vel_joint_torque_reward_base(data, k)
 
@@ -463,7 +487,7 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
     cube_velocity = self.get_cube_linvel(data)
     joint_torque = self.get_hand_joint_torque(data)
 
-    k = self._config.reward_config.scales["cube_vel_joint_torque"]
+    k = self._config.reward_config.scales[RewardType.CUBE_VEL_JOINT_TORQUE.value]
     v = jp.linalg.norm(cube_velocity)
 
     return jp.mean(jp.exp(-k * v**2) * joint_torque**2)

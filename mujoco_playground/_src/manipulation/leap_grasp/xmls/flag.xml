@@ -1,0 +1,18 @@
+<mujoco model="flag">
+  <default>
+    <default class="flag">
+      <geom type="cylinder" size="0.05 0.005" contype="0" conaffinity="0" density="0" group="2" mass=".108"/>
+    </default>
+
+  </default>
+
+  <worldbody>
+    <!-- Parent body representing the coin -->
+    <body name="coin"  mocap="true" pos="0 0.15 0.2" euler="0 1.57 0 ">
+      <!-- Red half of the coin -->
+      <geom name="red_half" class ="flag" pos="0 0 -0.0025" rgba="1 0 0 1"/>
+      <!-- Green half of the coin -->
+      <geom name="green_half" class ="flag" pos="0 0 0.0025" rgba="0 1 0 1"/>
+    </body>
+  </worldbody>
+</mujoco>
