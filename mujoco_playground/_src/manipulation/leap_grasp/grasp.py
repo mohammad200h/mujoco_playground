@@ -38,6 +38,7 @@ class RewardType(Enum):
     JOINT_VEL_JOINT_TORQUE = "joint_vel_joint_torque"
     CUBE_VEL_JOINT_TORQUE = "cube_vel_joint_torque"
     JOINT_VEL_JOINT_TORQUE_DISTANCE_DEPENDENT = "joint_vel_joint_torque_distance_dependent"
+    HAND_MAINTAINING_PREGRASP_POSE = "hand_maintaining_pregrasp_pose"
 
 
 cube_initial_location = [-0.3, 0.0, 0.2]
@@ -63,12 +64,11 @@ def default_config() -> config_dict.ConfigDict:
       ),
       reward_config=config_dict.create(
           scales=config_dict.create(
-              cube_vel_joint_torque=1,
+              cube_vel_joint_torque= 1,
               termination=-100.0,
               joint_vel_joint_torque = 1,
-              joint_vel_joint_torque_distance_dependent = 1
-
-
+              joint_vel_joint_torque_distance_dependent = 1,
+              hand_maintaining_pregrasp_pose = 1
           ),
           success_reward=100.0,
       ),
@@ -89,7 +89,7 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
       self,
       config: config_dict.ConfigDict = default_config(),
       config_overrides: Optional[Dict[str, Union[str, int, list[Any]]]] = None,
-      reward_type:RewardType = RewardType.JOINT_VEL_JOINT_TORQUE_DISTANCE_DEPENDENT
+      reward_type:RewardType = RewardType.HAND_MAINTAINING_PREGRASP_POSE
   ):
     super().__init__(
       xml_path=consts.CUBE_XML.as_posix(),
@@ -107,13 +107,14 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
 
     self._mocap_quat_close_enough = jp.array( self._mj_model.keyframe("close_enough").mquat)
     self._mocap_quat_far = jp.array( self._mj_model.keyframe("far").mquat)
-
     self._mocap_pos_close_enough = jp.array( self._mj_model.keyframe("close_enough").mpos)
     self._mocap_pos_far = jp.array( self._mj_model.keyframe("far").mpos)
 
+    self._hand_qids = mjx_env.get_qpos_ids(self.mj_model, consts.JOINT_NAMES)
+    self.pregrasp_pose = jp.array(self._mj_model.keyframe("pregrasp").qpos[self._hand_qids])
+
     self._lowers = self._mj_model.actuator_ctrlrange[:, 0]
     self._uppers = self._mj_model.actuator_ctrlrange[:, 1]
-    self._hand_qids = mjx_env.get_qpos_ids(self.mj_model, consts.JOINT_NAMES)
     self._hand_dqids = mjx_env.get_qvel_ids(self.mj_model, consts.JOINT_NAMES)
     self._cube_qids = mjx_env.get_qpos_ids(self.mj_model, ["cube_freejoint"])
     self._floor_geom_id = self._mj_model.geom("floor").id
@@ -250,9 +251,6 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
     )
     data = state.data.replace(mocap_pos= mocap_pos)
     state = state.replace(data=data)
-
-
-
 
     # Apply control and step the physics.
     delta = action * self._config.action_scale
@@ -432,10 +430,8 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
     del done, metrics, info, action  # Unused.
 
     if self.reward_type == RewardType.JOINT_VEL_JOINT_TORQUE:
-
       rewards = {
          RewardType.JOINT_VEL_JOINT_TORQUE.value :self.joint_vel_joint_torque_reward(data),
-
       }
     elif self.reward_type == RewardType.CUBE_VEL_JOINT_TORQUE:
       rewards = {
@@ -445,8 +441,23 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
       rewards = {
         RewardType.JOINT_VEL_JOINT_TORQUE_DISTANCE_DEPENDENT.value:self.joint_vel_joint_torque_distance_dependent_reward(data),
       }
+    elif self.reward_type == RewardType.HAND_MAINTAINING_PREGRASP_POSE:
+      rewards = {
+        RewardType.HAND_MAINTAINING_PREGRASP_POSE.value:self.hand_maintaining_pregrasp_pose_reward(data),
+      }
 
     return rewards
+
+  def hand_maintaining_pregrasp_pose_reward_base(self,data:mjx.Data, k: float):
+    hand_pose = data.qpos[self._hand_qids]
+    diff = self.pregrasp_pose - hand_pose
+    return -k * jp.abs(jp.sum(diff))
+
+  def hand_maintaining_pregrasp_pose_reward(self,data:mjx.Data):
+    k = self._config.reward_config.scales[RewardType.HAND_MAINTAINING_PREGRASP_POSE.value]
+    reward = self.hand_maintaining_pregrasp_pose_reward_base(data, k)
+
+    return reward
 
   def joint_vel_joint_torque_distance_dependent_reward_base(self,data:mjx.Data, k: float):
     # exp(-k*dq)* | tau| ^2
