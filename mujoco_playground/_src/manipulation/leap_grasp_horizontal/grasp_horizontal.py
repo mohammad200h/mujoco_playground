@@ -90,9 +90,11 @@ class CubeHorizontalGrasp(leap_hand_base.LeapHandEnv):
 
     # Randomize cube qpos and qvel.
     rng, p_rng, quat_rng = jax.random.split(rng, 3)
-    start_pos = jp.array([0.1, 0.0, 0.05]) + jax.random.uniform(
-        p_rng, (3,), minval=-0.01, maxval=0.01
-    )
+    # start_pos = jp.array([0.1, 0.0, 0.05]) + jax.random.uniform(
+    #     p_rng, (3,), minval=-0.01, maxval=0.01
+    # )
+    start_pos = jp.array([0.1, 0.0, 0.05])
+
     start_quat = leap_hand_base.uniform_quat(quat_rng)
     q_cube = jp.array([*start_pos, *start_quat])
     v_cube = jp.zeros(6)
@@ -148,6 +150,19 @@ class CubeHorizontalGrasp(leap_hand_base.LeapHandEnv):
       state.metrics[f"reward/{k}"] = v
 
     done = done.astype(reward.dtype)
+
+    q_hand = jp.array([0.8, 0, 0.8, 0.8,
+                       0.8, 0, 0.8, 0.8,
+                       0.8, 0, 0.8, 0.8,
+                       0.8, 0.8, 0.8, 0])
+    q_cube = jp.array([0.1, 0.0, 0.05, 0.810967,
+                       -0.00262895, -0.585086, -0.000254303])
+
+    new_qpos = jp.concatenate([q_hand, q_cube])
+
+    qpos = jp.where(done, new_qpos, data.qpos)
+
+    data = data.replace(qpos=jp.array(qpos))
     state = state.replace(data=data, obs=obs, reward=reward, done=done)
     return state
 
