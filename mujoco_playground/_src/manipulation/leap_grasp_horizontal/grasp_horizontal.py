@@ -20,9 +20,11 @@ import jax
 import jax.numpy as jp
 from ml_collections import config_dict
 from mujoco import mjx
+from mujoco.mjx._src import math
 import numpy as np
 
 from mujoco_playground._src import mjx_env
+from mujoco_playground._src import reward
 from mujoco_playground._src.manipulation.leap_grasp_horizontal import base as leap_hand_base
 from mujoco_playground._src.manipulation.leap_grasp_horizontal import leap_hand_constants as consts
 
@@ -44,9 +46,15 @@ def default_config() -> config_dict.ConfigDict:
       ),
       reward_config=config_dict.create(
           scales=config_dict.create(
-              finger_tip_dist=1.0,
-
+              orientation=5.0,
+              position=0.5,
+              termination=-100.0,
+              hand_pose=-0.5,
+              action_rate=-0.001,
+              joint_vel=0.0,
+              energy=-1e-3,
           ),
+          success_reward=100.0,
       ),
   )
 
@@ -108,13 +116,14 @@ class CubeHorizontalGrasp(leap_hand_base.LeapHandEnv):
         ctrl=q_hand,
         mocap_pos=jp.array([-100, -100, -100]),  # Hide goal for this task.
     )
-
+    
     info = {
         "rng": rng,
         "last_act": jp.zeros(self.mjx_model.nu),
         "last_last_act": jp.zeros(self.mjx_model.nu),
         "motor_targets": data.ctrl,
         "last_cube_angvel": jp.zeros(3),
+        "cube_intial_orn":self.get_cube_orientation(data)
     }
 
     metrics = {}
@@ -223,19 +232,63 @@ class CubeHorizontalGrasp(leap_hand_base.LeapHandEnv):
       metrics: dict[str, Any],
       done: jax.Array,
   ) -> dict[str, jax.Array]:
-    del metrics  # Unused.
-    del done
-    del info
-    del action
+    del done, metrics  # Unused.
+
+    cube_pos = self.get_cube_position(data)
+    palm_pos = self.get_palm_position(data)
+    cube_pose_mse = jp.linalg.norm(palm_pos - cube_pos)
+    cube_pos_reward = reward.tolerance(
+        cube_pose_mse, (0, 0.02), margin=0.05, sigmoid="linear"
+    )
+
+    terminated = self._get_termination(data)
+
+    hand_pose_reward = jp.sum(
+        jp.square(data.qpos[self._hand_qids] - self._default_pose)
+    )
 
     return {
-        "finger_tip_dist":self._finger_tip_dist_reward(
-          self.finger_tips_to_target(data)
-        )
+        "orientation": self._reward_cube_orientation(data,info["cube_intial_orn"]),
+        "position": cube_pos_reward,
+        "termination": terminated,
+        "hand_pose": hand_pose_reward,
+        "action_rate": self._cost_action_rate(
+            action, info["last_act"], info["last_last_act"]
+        ),
+        "joint_vel": self._cost_joint_vel(data),
+        "energy": self._cost_energy(
+            data.qvel[self._hand_dqids], data.actuator_force
+        ),
     }
 
-  def _finger_tip_dist_reward(self, dist:jax.Array):
-    return -1 * jp.sum(dist)
+  def _cost_energy(
+      self, qvel: jax.Array, qfrc_actuator: jax.Array
+  ) -> jax.Array:
+    return jp.sum(jp.abs(qvel) * jp.abs(qfrc_actuator))
+
+  def _cube_orientation_error(self, data: mjx.Data,cube_initial_orn:jax.Array):
+    cube_ori = self.get_cube_orientation(data)
+    quat_diff = math.quat_mul(cube_ori, math.quat_inv(cube_initial_orn))
+    quat_diff = math.normalize(quat_diff)
+    return 2.0 * jp.asin(jp.clip(math.norm(quat_diff[1:]), a_max=1.0))
+
+  def _reward_cube_orientation(self, data: mjx.Data, cube_initial_orn:jax.Array) -> jax.Array:
+    ori_error = self._cube_orientation_error(data,cube_initial_orn)
+    return reward.tolerance(ori_error, (0, 0.2), margin=jp.pi, sigmoid="linear")
+
+  def _cost_action_rate(
+      self, act: jax.Array, last_act: jax.Array, last_last_act: jax.Array
+  ) -> jax.Array:
+    c1 = jp.sum(jp.square(act - last_act))
+    c2 = jp.sum(jp.square(act - 2 * last_act + last_last_act))
+    return c1 + c2
+
+  def _cost_joint_vel(self, data: mjx.Data) -> jax.Array:
+    max_velocity = 5.0
+    vel_tolerance = 1.0
+    hand_qvel = data.qvel[self._hand_dqids]
+    return jp.sum((hand_qvel / (max_velocity - vel_tolerance)) ** 2)
+
 
 def domain_randomize(model: mjx.Model, rng: jax.Array):
   mj_model = CubeHorizontalGrasp().mj_model
