@@ -52,7 +52,7 @@ def default_config() -> config_dict.ConfigDict:
               hand_pose=-0.5,
               action_rate=-0.001,
               joint_vel=0.0,
-              energy=-1e-3,
+              energy=-1e-1,
           ),
           success_reward=100.0,
       ),
