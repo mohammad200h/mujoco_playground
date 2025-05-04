@@ -46,13 +46,14 @@ def default_config() -> config_dict.ConfigDict:
       ),
       reward_config=config_dict.create(
           scales=config_dict.create(
-              orientation=5.0,
-              position=0.5,
+              orientation=1e-3,
+              position=1e-3,
               termination=-100.0,
-              hand_pose=-0.5,
-              action_rate=-0.001,
+              hand_pose=0.0,
+              action_rate=0.0,
               joint_vel=0.0,
-              energy=-1e-1,
+              energy=0.0,
+              finger_tip_dist=-1e-1,
           ),
           success_reward=100.0,
       ),
@@ -94,14 +95,15 @@ class CubeHorizontalGrasp(leap_hand_base.LeapHandEnv):
         self._lowers,
         self._uppers,
     )
+    # q_hand = self._default_pose
     v_hand = 0.0 * jax.random.normal(vel_rng, (consts.NV,))
 
     # Randomize cube qpos and qvel.
     rng, p_rng, quat_rng = jax.random.split(rng, 3)
-    # start_pos = jp.array([0.1, 0.0, 0.05]) + jax.random.uniform(
-    #     p_rng, (3,), minval=-0.01, maxval=0.01
-    # )
-    start_pos = jp.array([0.1, 0.0, 0.05])
+    start_pos = jp.array([0.1, 0.0, 0.05]) + jax.random.uniform(
+        p_rng, (3,), minval=-0.01, maxval=0.01
+    )
+    # start_pos = jp.array([0.1, 0.0, 0.05])
 
     start_quat = leap_hand_base.uniform_quat(quat_rng)
     q_cube = jp.array([*start_pos, *start_quat])
@@ -159,11 +161,8 @@ class CubeHorizontalGrasp(leap_hand_base.LeapHandEnv):
       state.metrics[f"reward/{k}"] = v
 
     done = done.astype(reward.dtype)
-
-    q_hand = jp.array([0.8, 0, 0.8, 0.8,
-                       0.8, 0, 0.8, 0.8,
-                       0.8, 0, 0.8, 0.8,
-                       0.8, 0.8, 0.8, 0])
+    q_hand = data.qpos[self._hand_qids]
+ 
     q_cube = jp.array([0.1, 0.0, 0.05, 0.810967,
                        -0.00262895, -0.585086, -0.000254303])
 
@@ -248,6 +247,7 @@ class CubeHorizontalGrasp(leap_hand_base.LeapHandEnv):
     )
 
     return {
+        
         "orientation": self._reward_cube_orientation(data,info["cube_intial_orn"]),
         "position": cube_pos_reward,
         "termination": terminated,
@@ -258,6 +258,9 @@ class CubeHorizontalGrasp(leap_hand_base.LeapHandEnv):
         "joint_vel": self._cost_joint_vel(data),
         "energy": self._cost_energy(
             data.qvel[self._hand_dqids], data.actuator_force
+        ),
+        "finger_tip_dist":self._finger_tip_dist_reward(
+            self.finger_tips_to_target(data)
         ),
     }
 
@@ -288,6 +291,12 @@ class CubeHorizontalGrasp(leap_hand_base.LeapHandEnv):
     vel_tolerance = 1.0
     hand_qvel = data.qvel[self._hand_dqids]
     return jp.sum((hand_qvel / (max_velocity - vel_tolerance)) ** 2)
+
+  def _finger_tip_dist_reward(self, dist:jax.Array):
+    
+    reward = -1 * jp.pow((dist),2)
+    reward = jp.sum(jp.exp(reward))
+    return reward
 
 
 def domain_randomize(model: mjx.Model, rng: jax.Array):
