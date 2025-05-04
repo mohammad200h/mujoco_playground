@@ -208,6 +208,7 @@ class CubeHorizontalGrasp(leap_hand_base.LeapHandEnv):
         cube_quat,
         cube_angvel,
         cube_linvel,
+        self.finger_tips_to_target(data)
     ])
 
     return {
