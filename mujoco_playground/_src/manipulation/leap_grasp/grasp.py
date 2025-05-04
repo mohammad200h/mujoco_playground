@@ -208,6 +208,7 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
     return actions, rng
 
   def step(self, state: mjx_env.State, action: jax.Array) -> mjx_env.State:
+    # Apply external force to cube driving it toward palm of the hand
     if not self.impulse_applied:
       data = state.data.replace(qfrc_applied= self.get_impulse())
       state = state.replace(data=data)
@@ -224,9 +225,6 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
         self._config.ema_alpha * motor_targets
         + (1 - self._config.ema_alpha) * state.info["motor_targets"]
     )
-
-    #TODO: Apply external Force to the cube
-
 
     data = mjx_env.step(
         self.mjx_model, state.data, motor_targets, self.n_substeps
