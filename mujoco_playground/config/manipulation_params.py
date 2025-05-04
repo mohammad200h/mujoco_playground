@@ -218,6 +218,7 @@ def brax_ppo_config(env_name: str) -> config_dict.ConfigDict:
     )
   elif env_name == "LeapHorizontalGrasp":
     rl_config.num_timesteps = 100_000_000
+    # rl_config.num_timesteps = 200_000_000
     # rl_config.num_timesteps = 60_000_000
     # rl_config.num_timesteps = 30_000_000
     # rl_config.num_timesteps = 1_000_000
