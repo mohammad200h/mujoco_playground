@@ -32,6 +32,8 @@ from mujoco_playground._src.manipulation.leap_hand import rotate_z as leap_rotat
 from mujoco_playground._src.manipulation.leap_grasp import reorient as leap_g_cube_reorient
 from mujoco_playground._src.manipulation.leap_grasp import rotate_z as leap_g_rotate_z
 from mujoco_playground._src.manipulation.leap_grasp import grasp
+from mujoco_playground._src.manipulation.leap_grasp_horizontal import grasp_horizontal
+
 
 _envs = {
     "AlohaHandOver": aloha_handover.HandOver,
@@ -46,7 +48,8 @@ _envs = {
 
     "LeapGCubeReorient": leap_g_cube_reorient.CubeReorient,
     "LeapGCubeRotateZAxis": leap_g_rotate_z.CubeRotateZAxis,
-    "LeapGrasp": grasp.CubeGrasp
+    "LeapGrasp": grasp.CubeGrasp,
+    "LeapHorizontalGrasp":grasp_horizontal.CubeHorizontalGrasp
 }
 
 _cfgs = {
@@ -62,7 +65,9 @@ _cfgs = {
 
     "LeapGCubeReorient": leap_g_cube_reorient.default_config,
     "LeapGCubeRotateZAxis": leap_g_rotate_z.default_config,
-    "LeapGrasp": grasp.default_config
+    "LeapGrasp": grasp.default_config,
+    "LeapHorizontalGrasp":grasp_horizontal.default_config
+
 
 }
 
@@ -73,6 +78,8 @@ _randomizer = {
     "LeapGCubeRotateZAxis": leap_g_rotate_z.domain_randomize,
     "LeapGCubeReorient": leap_g_cube_reorient.domain_randomize,
     "LeapGrasp": grasp.domain_randomize,
+    "LeapHorizontalGrasp":grasp_horizontal.domain_randomize
+
 
 }
 
