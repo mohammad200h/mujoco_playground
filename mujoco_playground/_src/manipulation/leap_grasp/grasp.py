@@ -40,7 +40,8 @@ class RewardType(Enum):
     JOINT_VEL_JOINT_TORQUE_DISTANCE_DEPENDENT = "joint_vel_joint_torque_distance_dependent"
 
 
-cube_initial_location = [-0.3, 0.0, 0.2]
+# TODO: Replace this so it's loaded from xml key
+cube_initial_location = [-0.05, 0, 0.15]
 
 def default_config() -> config_dict.ConfigDict:
   return config_dict.create(
