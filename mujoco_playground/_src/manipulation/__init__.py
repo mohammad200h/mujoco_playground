@@ -29,8 +29,7 @@ from mujoco_playground._src.manipulation.franka_emika_panda_robotiq import push_
 from mujoco_playground._src.manipulation.leap_hand import reorient as leap_cube_reorient
 from mujoco_playground._src.manipulation.leap_hand import rotate_z as leap_rotate_z
 
-from mujoco_playground._src.manipulation.leap_grasp import reorient as leap_g_cube_reorient
-from mujoco_playground._src.manipulation.leap_grasp import rotate_z as leap_g_rotate_z
+
 from mujoco_playground._src.manipulation.leap_grasp import grasp
 from mujoco_playground._src.manipulation.leap_grasp_horizontal import grasp_horizontal
 
@@ -45,9 +44,6 @@ _envs = {
     "PandaRobotiqPushCube": robotiq_push_cube.PandaRobotiqPushCube,
     "LeapCubeReorient": leap_cube_reorient.CubeReorient,
     "LeapCubeRotateZAxis": leap_rotate_z.CubeRotateZAxis,
-
-    "LeapGCubeReorient": leap_g_cube_reorient.CubeReorient,
-    "LeapGCubeRotateZAxis": leap_g_rotate_z.CubeRotateZAxis,
     "LeapGrasp": grasp.CubeGrasp,
     "LeapHorizontalGrasp":grasp_horizontal.CubeHorizontalGrasp
 }
@@ -62,9 +58,6 @@ _cfgs = {
     "PandaRobotiqPushCube": robotiq_push_cube.default_config,
     "LeapCubeReorient": leap_cube_reorient.default_config,
     "LeapCubeRotateZAxis": leap_rotate_z.default_config,
-
-    "LeapGCubeReorient": leap_g_cube_reorient.default_config,
-    "LeapGCubeRotateZAxis": leap_g_rotate_z.default_config,
     "LeapGrasp": grasp.default_config,
     "LeapHorizontalGrasp":grasp_horizontal.default_config
 
@@ -72,11 +65,8 @@ _cfgs = {
 }
 
 _randomizer = {
-    "LeapCubeRotateZAxis": leap_g_rotate_z.domain_randomize,
-    "LeapCubeReorient": leap_g_cube_reorient.domain_randomize,
-
-    "LeapGCubeRotateZAxis": leap_g_rotate_z.domain_randomize,
-    "LeapGCubeReorient": leap_g_cube_reorient.domain_randomize,
+    "LeapCubeRotateZAxis": leap_cube_reorient.domain_randomize,
+    "LeapCubeReorient": leap_cube_reorient.domain_randomize,
     "LeapGrasp": grasp.domain_randomize,
     "LeapHorizontalGrasp":grasp_horizontal.domain_randomize
 

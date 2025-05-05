@@ -44,10 +44,10 @@
     <framepos name="rf_tip_position" objtype="site" objname="rf_tip" reftype="site" refname="grasp_site"/>
 
 
-    <touch site="th_tip"/>
+    <!-- <touch site="th_tip"/>
     <touch site="if_tip"/>
     <touch site="mf_tip"/>
-    <touch site="rf_tip"/>
+    <touch site="rf_tip"/> -->
 
      <!-- joint torque. -->
     <jointactuatorfrc joint="if_mcp" name="if_mcp_torque_sensor"/>
@@ -92,11 +92,9 @@
   <keyframe>
     <key name="home"
       qpos="
-      0 0 0 0
-      0 0 0 0 
-      0 0 0 0 
-      0 0 0 0 
-      -0.05 0 0.15 1 0 0 0"
+      0 0 0 0 0 0 0 0 0
+      0 0 0 0 0 0 0 -0.3
+      0 0.2 1 0 0 0"
       ctrl="
       0.8 0 0.8 0.8
       0.8 0 0.8 0.8
@@ -104,13 +102,6 @@
       0.8 0.8 0.8 0"
       mpos ="0 0.15 0.2"
       mquat="0 0.707 0 0.707"
-    />
-    <key name="pregrasp"
-         qpos='0.33472 0 0.16348 0.28416
-               0.33472 0 0.16348 0.28416
-               0.33472 0 0.16348 0.28416
-              0.45719 0.591555 0.28738 0.5115
-              -0.3 0 0.2 1 0 0 0'
     />
     <key name="close_enough"
       mpos ="0 0.15 0.2"
