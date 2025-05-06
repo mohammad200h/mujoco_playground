@@ -31,6 +31,8 @@ from mujoco_playground._src.manipulation.leap_hand import rotate_z as leap_rotat
 
 
 from mujoco_playground._src.manipulation.leap_grasp import grasp
+from mujoco_playground._src.manipulation.leap_grasp_modular import grasp_modular
+
 from mujoco_playground._src.manipulation.leap_grasp_horizontal import grasp_horizontal
 
 
@@ -45,6 +47,7 @@ _envs = {
     "LeapCubeReorient": leap_cube_reorient.CubeReorient,
     "LeapCubeRotateZAxis": leap_rotate_z.CubeRotateZAxis,
     "LeapGrasp": grasp.CubeGrasp,
+    "LeapGraspModular": grasp_modular.CubeGraspModular,
     "LeapHorizontalGrasp":grasp_horizontal.CubeHorizontalGrasp
 }
 
@@ -59,6 +62,7 @@ _cfgs = {
     "LeapCubeReorient": leap_cube_reorient.default_config,
     "LeapCubeRotateZAxis": leap_rotate_z.default_config,
     "LeapGrasp": grasp.default_config,
+    "LeapGraspModular": grasp_modular.default_config,
     "LeapHorizontalGrasp":grasp_horizontal.default_config
 
 
@@ -68,9 +72,8 @@ _randomizer = {
     "LeapCubeRotateZAxis": leap_cube_reorient.domain_randomize,
     "LeapCubeReorient": leap_cube_reorient.domain_randomize,
     "LeapGrasp": grasp.domain_randomize,
+    "LeapGraspModular": grasp_modular.domain_randomize,
     "LeapHorizontalGrasp":grasp_horizontal.domain_randomize
-
-
 }
 
 
