@@ -38,6 +38,7 @@ class RewardType(Enum):
     JOINT_VEL_JOINT_TORQUE = "joint_vel_joint_torque"
     CUBE_VEL_JOINT_TORQUE = "cube_vel_joint_torque"
     JOINT_VEL_JOINT_TORQUE_DISTANCE_DEPENDENT = "joint_vel_joint_torque_distance_dependent"
+    FINGER_TIP_DIST= "finger_tip_dist"
 
 
 # TODO: Replace this so it's loaded from xml key
@@ -50,9 +51,10 @@ def default_config() -> config_dict.ConfigDict:
       action_scale=0.5,
       action_repeat=1,
       ema_alpha=1.0,
-      episode_length=1000,
+      episode_length=500,
       success_threshold=0.1,
-      history_len=1,
+      history_len=5,
+      early_termination=True,
       obs_noise=config_dict.create(
           level=1.0,
           scales=config_dict.create(
@@ -67,7 +69,8 @@ def default_config() -> config_dict.ConfigDict:
               cube_vel_joint_torque=1,
               termination=-100.0,
               joint_vel_joint_torque = 1,
-              joint_vel_joint_torque_distance_dependent = 1
+              joint_vel_joint_torque_distance_dependent = 1,
+              finger_tip_dist=1,
 
 
           ),
@@ -90,7 +93,7 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
       self,
       config: config_dict.ConfigDict = default_config(),
       config_overrides: Optional[Dict[str, Union[str, int, list[Any]]]] = None,
-      reward_type:RewardType = RewardType.JOINT_VEL_JOINT_TORQUE_DISTANCE_DEPENDENT
+      reward_type:RewardType = RewardType.FINGER_TIP_DIST
   ):
     super().__init__(
       xml_path=consts.CUBE_XML.as_posix(),
@@ -201,6 +204,8 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
         "pert_vel": pert_velocity,
         "pert_dir": jp.zeros(6, dtype=float),
         "last_pert_step": jp.array([-jp.inf], dtype=float),
+        # Weight Histroy
+        "weights":jp.zeros(4, dtype=float),
     }
 
     metrics = {}
@@ -256,13 +261,10 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
 
 
 
-    # Apply control and step the physics.
-    delta = action * self._config.action_scale
-    motor_targets = state.data.ctrl + delta
-    motor_targets = jp.clip(motor_targets, self._lowers, self._uppers)
-    motor_targets = (
-        self._config.ema_alpha * motor_targets
-        + (1 - self._config.ema_alpha) * state.info["motor_targets"]
+    motor_targets = self._default_pose + action * self._config.action_scale
+    # NOTE: no clipping.
+    data = mjx_env.step(
+        self.mjx_model, state.data, motor_targets, self.n_substeps
     )
 
     data = mjx_env.step(
@@ -271,21 +273,6 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
 
     state.info["motor_targets"] = motor_targets
 
-    # Power Grasp should reduce acceleration and velocity of cube to zero
-    # It should also have contact with Thumb and one other finger
-    # success = (self._cube_linear_vel_is_zero(data) +
-    #            self._cube_angular_vel_is_zero(data) +
-    #            self._there_is_a_contact_with_thumb(data) +
-    #            self._there_is_a_contact_with_any_of_ff_mf_rf(data)
-    # )
-    # success = 0.0
-
-    # state.info["steps_since_last_success"] = jp.where(
-    #     success, 0, state.info["steps_since_last_success"] + 1
-    # )
-    # state.info["success_count"] = jp.where(
-    #     success, state.info["success_count"] + 1, state.info["success_count"]
-    # )
     state.metrics["steps_since_last_success"] = state.info[
         "steps_since_last_success"
     ]
@@ -295,22 +282,19 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
     done = self._get_termination(data, state.info)
     obs = self._get_obs(data, state.info)
 
-    # TODO: I need to write reward function
-    rewards = self._get_reward(data, action, state.info, state.metrics, done)
+    rewards, weights = self._get_reward(data, action, state.info, state.metrics, done)
+
+    rewards = {
+        k: v * self._config.reward_config.scales[k] for k, v in rewards.items()
+    }
 
     reward = sum(rewards.values()) * self.dt  # pylint: disable=redefined-outer-name
 
-
+    # Update weights
+    state.info["weights"] = weights
     # reset cube and hand where success
     state.info["rng"], reset_rng = jax.random.split(state.info["rng"])
     new_qpos,new_qvel = self.generate_new_pose_and_velocity(reset_rng)
-
-    # qpos = jp.where(success, new_qpos, data.qpos)
-    # qvel = jp.where(success, new_qvel, data.qvel)
-    # data = data.replace(qpos=jp.array(qpos))
-    # data = data.replace(qvel=jp.array(qvel))
-    # state.metrics["reward/success"] = success.astype(float)
-    # reward += success * self._config.reward_config.success_reward
 
     # Update info and metrics.
     state.info["step"] += 1
@@ -428,8 +412,8 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
       metrics: dict[str, Any],
       done: jax.Array,
   ) -> dict[str, jax.Array]:
-    del done, metrics, info, action  # Unused.
-
+    del done, metrics, action  # Unused.
+  
     if self.reward_type == RewardType.JOINT_VEL_JOINT_TORQUE:
 
       rewards = {
@@ -444,8 +428,74 @@ class CubeGrasp(leap_hand_base.LeapHandEnv):
       rewards = {
         RewardType.JOINT_VEL_JOINT_TORQUE_DISTANCE_DEPENDENT.value:self.joint_vel_joint_torque_distance_dependent_reward(data),
       }
+    elif self.reward_type == RewardType.FINGER_TIP_DIST:
+      # reward, weights = self._finger_tip_dist_weighted_considering_distance_and_time_reward(
+      #                         self.finger_tips_to_target(data),info
+      #                   )
+      # reward, weights = self._finger_tip_dist_reward(self.finger_tips_to_target(data))
+      
+      reward, weights = self._finger_tip_dist_weighted_reward(self.finger_tips_to_target(data))
 
-    return rewards
+
+      rewards = {
+        RewardType.FINGER_TIP_DIST.value : reward,
+      }
+
+    return rewards, weights
+
+  def _finger_tip_dist_reward(self, dist:jax.Array):
+    
+    reward = -1 * jp.pow((dist),2)
+    reward = jp.sum(jp.exp(reward))
+    return reward, jp.zeros(4, dtype=float)
+
+  def _finger_tip_dist_weighted_reward(self, dist:jax.Array):
+    weights = self.get_weights(dist)
+
+    weighted_dist = weights * dist
+    
+    reward = -1 * jp.pow((weighted_dist),2)
+    reward = jp.sum(jp.exp(reward))
+    return reward, weights
+  
+  def _finger_tip_dist_weighted_considering_distance_and_time_reward(self, dist: jax.Array, info):
+    weights = self.get_weights(dist)
+    old_weights = info["weights"]
+
+    max_idx = jp.argmax(weights)
+    old_max_idx = jp.argmax(old_weights)
+
+    # Condition: max index has not changed
+    same_max = max_idx == old_max_idx
+
+    def redistribute_weights(weights):
+        redistrbiution_rate = 0.1
+        donation = redistrbiution_rate * weights
+        donation = donation.at[max_idx].set(0.0)
+        total_donation = jp.sum(donation)
+        new_weights = weights - donation
+        return new_weights.at[max_idx].add(total_donation)
+
+    # Use JAX conditional
+    weights = jax.lax.cond(
+        same_max,
+        lambda _: redistribute_weights(weights),
+        lambda _: weights,
+        operand=None
+    )
+
+    weighted_dist = weights * dist
+    reward = -1 * jp.pow(weighted_dist, 2)
+    reward = jp.sum(jp.exp(reward))
+
+    return reward, weights
+
+  def get_weights(self, dist:jax.Array):
+    return dist/jp.sum(dist)
+  
+  # def _finger_tip_dist_reward(self, dist:jax.Array):
+  #   reward =-1 * jp.sum(dist)
+  #   return reward
 
   def joint_vel_joint_torque_distance_dependent_reward_base(self,data:mjx.Data, k: float):
     # exp(-k*dq)* | tau| ^2
