@@ -57,9 +57,9 @@ def default_config() -> config_dict.ConfigDict:
               action_rate=-0.001,
               joint_vel=0.0,
               energy=-1e-3,
-            #   cube_velocity_zero_reward = 1.0,
-              cube_velocity_zero_maximize_torque_reward =1.0,
-              finger_tip_dist_weighted_considering_distance_and_time_reward=1.0
+              cube_velocity_zero_reward = 1.0,
+            #   cube_velocity_zero_maximize_torque_reward =1.0,
+              finger_tip_dist_weighted_considering_distance_and_time_reward=2.0
           ),
         #   success_reward=100.0,
       ),
@@ -183,6 +183,8 @@ class CubeReorient(leap_hand_base.LeapHandEnv):
         "pert_vel": pert_velocity,
         "pert_dir": jp.zeros(6, dtype=float),
         "last_pert_step": jp.array([-jp.inf], dtype=float),
+        # Weight Histroy
+        "weights":jp.zeros(4, dtype=float),
     }
 
     metrics = {}
@@ -230,11 +232,14 @@ class CubeReorient(leap_hand_base.LeapHandEnv):
     done = self._get_termination(data, state.info)
     obs = self._get_obs(data, state.info)
 
-    rewards = self._get_reward(data, action, state.info, state.metrics, done)
+    rewards, weights = self._get_reward(data, action, state.info, state.metrics, done)
     rewards = {
         k: v * self._config.reward_config.scales[k] for k, v in rewards.items()
     }
     reward = sum(rewards.values()) * self.dt  # pylint: disable=redefined-outer-name
+
+    # Update weights
+    state.info["weights"] = weights
 
     # Sample a new goal orientation.
     state.info["rng"], goal_rng = jax.random.split(state.info["rng"])
@@ -397,7 +402,8 @@ class CubeReorient(leap_hand_base.LeapHandEnv):
     hand_pose_reward = jp.sum(
         jp.square(data.qpos[self._hand_qids] - self._default_pose)
     )
-
+    finger_tip_dist_weighted_considering_distance_and_time_reward,weight = self._finger_tip_dist_weighted_considering_distance_and_time_reward(
+            self.finger_tips_to_target(data),info)
     return {
         "orientation": self._reward_cube_orientation(data),
         "position": cube_pos_reward,
@@ -412,8 +418,8 @@ class CubeReorient(leap_hand_base.LeapHandEnv):
         ),
         "cube_velocity_zero_reward":self._cube_velocity_zero_reward(data),
         # "cube_velocity_zero_maximize_torque_reward":self._cube_velocity_zero_maximize_torque_reward(data),
-        "finger_tip_dist_weighted_considering_distance_and_time_reward" : self._finger_tip_dist_weighted_considering_distance_and_time_reward(data,info)
-    }
+        "finger_tip_dist_weighted_considering_distance_and_time_reward" : finger_tip_dist_weighted_considering_distance_and_time_reward
+    },weight
 
   def _cost_energy(
       self, qvel: jax.Array, qfrc_actuator: jax.Array

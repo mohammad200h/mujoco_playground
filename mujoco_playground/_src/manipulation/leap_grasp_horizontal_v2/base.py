@@ -107,6 +107,16 @@ class LeapHandEnv(mjx_env.MjxEnv):
       mjx_env.get_sensor_data(self.mj_model, data, f"{name}_torque_sensor")
       for name in consts.JOINT_NAMES
     ])
+  
+  def finger_tips_to_target(self,data:mjx.Data) -> jax.Array:
+    cube_pos = self.get_cube_position(data)
+    poses = self.get_fingertip_positions(data).reshape(-1, 3)
+
+    dist_xyz = jp.abs(cube_pos - poses)
+    dist = jp.linalg.norm(dist_xyz, axis=1)
+
+
+    return dist
 
   # Accessors.
 
