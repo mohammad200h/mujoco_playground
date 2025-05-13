@@ -49,7 +49,7 @@ _envs = {
     "LeapGCubeReorient": leap_g_cube_reorient.CubeReorient,
     "LeapGCubeRotateZAxis": leap_g_rotate_z.CubeRotateZAxis,
     "LeapGrasp": grasp.CubeGrasp,
-    "LeapCubeReorientV2": leap_cube_reorient.CubeReorient,
+    "LeapCubeReorientV2": leap_cube_reorient_v2.CubeReorient,
 
 }
 
@@ -67,7 +67,7 @@ _cfgs = {
     "LeapGCubeReorient": leap_g_cube_reorient.default_config,
     "LeapGCubeRotateZAxis": leap_g_rotate_z.default_config,
     "LeapGrasp": grasp.default_config,
-    "LeapCubeReorientV2": leap_cube_reorient.default_config,
+    "LeapCubeReorientV2": leap_cube_reorient_v2.default_config,
 
 }
 
@@ -78,7 +78,7 @@ _randomizer = {
     "LeapGCubeRotateZAxis": leap_g_rotate_z.domain_randomize,
     "LeapGCubeReorient": leap_g_cube_reorient.domain_randomize,
     "LeapGrasp": grasp.domain_randomize,
-    "LeapCubeReorientV2": leap_cube_reorient.domain_randomize,
+    "LeapCubeReorientV2": leap_cube_reorient_v2.domain_randomize,
 
 
 }

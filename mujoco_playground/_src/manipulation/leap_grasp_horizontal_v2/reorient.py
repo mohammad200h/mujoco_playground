@@ -104,7 +104,7 @@ class CubeReorient(leap_hand_base.LeapHandEnv):
   def reset(self, rng: jax.Array) -> mjx_env.State:
     # Randomize the goal orientation.
     rng, goal_rng = jax.random.split(rng)
-    goal_quat = leap_hand_base.uniform_quat(goal_rng)
+    # goal_quat = leap_hand_base.uniform_quat(goal_rng)
 
     # Randomize the hand pose.
     rng, pos_rng, vel_rng = jax.random.split(rng, 3)
@@ -117,10 +117,12 @@ class CubeReorient(leap_hand_base.LeapHandEnv):
 
     # Randomize the cube pose.
     rng, p_rng, quat_rng = jax.random.split(rng, 3)
-    start_pos = jp.array([0.1, 0.0, 0.05]) + jax.random.uniform(
-        p_rng, (3,), minval=-0.01, maxval=0.01
-    )
-    start_quat = leap_hand_base.uniform_quat(quat_rng)
+    # start_pos = jp.array([0.1, 0.0, 0.05]) + jax.random.uniform(
+    #     p_rng, (3,), minval=-0.01, maxval=0.01
+    # )
+    start_pos = jp.array([0.1, 0.0, 0.05])
+    # start_quat = leap_hand_base.uniform_quat(quat_rng)
+    start_quat = jp.array([1.0, 0.0, 0.0, 0.0])
     q_cube = jp.array([*start_pos, *start_quat])
     v_cube = jp.zeros(6)
 
@@ -132,7 +134,7 @@ class CubeReorient(leap_hand_base.LeapHandEnv):
         ctrl=q_hand,
         qvel=qvel,
         mocap_pos=self._init_mpos,
-        mocap_quat=goal_quat,
+        # mocap_quat=goal_quat,
     )
 
     rng, pert1, pert2, pert3 = jax.random.split(rng, 4)
@@ -238,12 +240,12 @@ class CubeReorient(leap_hand_base.LeapHandEnv):
         3 + jax.random.uniform(goal_rng, (3,), minval=-2, maxval=2),
         state.info["goal_quat_dquat"] * 0.8,
     )
-    goal_quat = math.quat_integrate(
-        state.data.mocap_quat[0],
-        state.info["goal_quat_dquat"],
-        2 * jp.array(self.dt),
-    )
-    data = data.replace(mocap_quat=jp.array([goal_quat]))
+    # goal_quat = math.quat_integrate(
+    #     state.data.mocap_quat[0],
+    #     state.info["goal_quat_dquat"],
+    #     2 * jp.array(self.dt),
+    # )
+    # data = data.replace(mocap_quat=jp.array([goal_quat]))
     state.metrics["reward/success"] = success.astype(float)
     reward += success * self._config.reward_config.success_reward
 
