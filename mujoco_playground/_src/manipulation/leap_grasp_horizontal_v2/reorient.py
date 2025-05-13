@@ -25,8 +25,8 @@ import numpy as np
 
 from mujoco_playground._src import mjx_env
 from mujoco_playground._src import reward
-from mujoco_playground._src.manipulation.leap_hand import base as leap_hand_base
-from mujoco_playground._src.manipulation.leap_hand import leap_hand_constants as consts
+from mujoco_playground._src.manipulation.leap_grasp_horizontal_v2 import base as leap_hand_base
+from mujoco_playground._src.manipulation.leap_grasp_horizontal_v2 import leap_hand_constants as consts
 
 
 def default_config() -> config_dict.ConfigDict:
@@ -57,8 +57,11 @@ def default_config() -> config_dict.ConfigDict:
               action_rate=-0.001,
               joint_vel=0.0,
               energy=-1e-3,
+            #   cube_velocity_zero_reward = 1.0,
+              cube_velocity_zero_maximize_torque_reward =1.0,
+              finger_tip_dist_weighted_considering_distance_and_time_reward=1.0
           ),
-          success_reward=100.0,
+        #   success_reward=100.0,
       ),
       pert_config=config_dict.create(
           enable=False,
@@ -247,7 +250,7 @@ class CubeReorient(leap_hand_base.LeapHandEnv):
     # )
     # data = data.replace(mocap_quat=jp.array([goal_quat]))
     state.metrics["reward/success"] = success.astype(float)
-    reward += success * self._config.reward_config.success_reward
+    # reward += success * self._config.reward_config.success_reward
 
     # Update info and metrics.
     state.info["step"] += 1
@@ -407,6 +410,9 @@ class CubeReorient(leap_hand_base.LeapHandEnv):
         "energy": self._cost_energy(
             data.qvel[self._hand_dqids], data.actuator_force
         ),
+        "cube_velocity_zero_reward":self._cube_velocity_zero_reward(data),
+        # "cube_velocity_zero_maximize_torque_reward":self._cube_velocity_zero_maximize_torque_reward(data),
+        "finger_tip_dist_weighted_considering_distance_and_time_reward" : self._finger_tip_dist_weighted_considering_distance_and_time_reward(data,info)
     }
 
   def _cost_energy(
@@ -437,6 +443,50 @@ class CubeReorient(leap_hand_base.LeapHandEnv):
     vel_tolerance = 1.0
     hand_qvel = data.qvel[self._hand_dqids]
     return jp.sum((hand_qvel / (max_velocity - vel_tolerance)) ** 2)
+
+  def _cube_velocity_zero_maximize_torque_reward(self, data:mjx.Data):    
+
+    cube_velocity = self.get_cube_linvel(data)    
+    joint_torque = self.get_hand_joint_torque(data)
+    k = 0.1
+    v = jp.linalg.norm(cube_velocity)
+    return jp.mean(jp.exp(-k * v**2) * joint_torque**2)
+  
+  def _finger_tip_dist_weighted_considering_distance_and_time_reward(self, dist: jax.Array, info):
+    weights = self.get_weights(dist)
+    old_weights = info["weights"]
+    max_idx = jp.argmax(weights)
+    old_max_idx = jp.argmax(old_weights)
+    # Condition: max index has not changed
+    same_max = max_idx == old_max_idx
+		
+    def redistribute_weights(weights):
+        redistrbiution_rate = 0.1
+        donation = redistrbiution_rate * weights
+        donation = donation.at[max_idx].set(0.0)
+        total_donation = jp.sum(donation)
+        new_weights = weights - donation
+        return new_weights.at[max_idx].add(total_donation)
+
+    weights = jax.lax.cond(
+        same_max,
+        lambda _: redistribute_weights(weights),
+        lambda _: weights,
+        operand=None
+    )
+    weighted_dist = weights * dist
+    reward = -1 * jp.pow(weighted_dist, 2)
+    reward = jp.sum(jp.exp(reward))
+    return reward, weights
+
+  def get_weights(self, dist:jax.Array):
+    return dist/jp.sum(dist)
+
+  def _cube_velocity_zero_reward(self,data:mjx.Data):
+    cube_velocity = self.get_cube_linvel(data)  
+    v = jp.linalg.norm(cube_velocity)  
+    k = 0.1
+    return jp.exp(-k * v**2)
 
   # Perturbation.
 

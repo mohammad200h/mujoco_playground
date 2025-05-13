@@ -46,6 +46,42 @@
     <framepos name="mf_tip_position" objtype="site" objname="mf_tip" reftype="site" refname="grasp_site"/>
     <framepos name="rf_tip_position" objtype="site" objname="rf_tip" reftype="site" refname="grasp_site"/>
 
+     <!-- joint torque. -->
+    <jointactuatorfrc joint="if_mcp" name="if_mcp_torque_sensor"/>
+    <jointactuatorfrc joint="if_rot" name="if_rot_torque_sensor"/>
+    <jointactuatorfrc joint="if_pip" name="if_pip_torque_sensor"/>
+    <jointactuatorfrc joint="if_dip" name="if_dip_torque_sensor"/>
+    <jointactuatorfrc joint="mf_mcp" name="mf_mcp_torque_sensor"/>
+    <jointactuatorfrc joint="mf_rot" name="mf_rot_torque_sensor"/>
+    <jointactuatorfrc joint="mf_pip" name="mf_pip_torque_sensor"/>
+    <jointactuatorfrc joint="mf_dip" name="mf_dip_torque_sensor"/>
+    <jointactuatorfrc joint="rf_mcp" name="rf_mcp_torque_sensor"/>
+    <jointactuatorfrc joint="rf_rot" name="rf_rot_torque_sensor"/>
+    <jointactuatorfrc joint="rf_pip" name="rf_pip_torque_sensor"/>
+    <jointactuatorfrc joint="rf_dip" name="rf_dip_torque_sensor"/>
+    <jointactuatorfrc joint="th_cmc" name="th_cmc_torque_sensor"/>
+    <jointactuatorfrc joint="th_axl" name="th_axl_torque_sensor"/>
+    <jointactuatorfrc joint="th_mcp" name="th_mcp_torque_sensor"/>
+    <jointactuatorfrc joint="th_ipl" name="th_ipl_torque_sensor"/>
+
+    <!-- joint vel. -->
+    <jointvel joint="if_mcp" name="if_mcp_velocity_sensor"/>
+    <jointvel joint="if_rot" name="if_rot_velocity_sensor"/>
+    <jointvel joint="if_pip" name="if_pip_velocity_sensor"/>
+    <jointvel joint="if_dip" name="if_dip_velocity_sensor"/>
+    <jointvel joint="mf_mcp" name="mf_mcp_velocity_sensor"/>
+    <jointvel joint="mf_rot" name="mf_rot_velocity_sensor"/>
+    <jointvel joint="mf_pip" name="mf_pip_velocity_sensor"/>
+    <jointvel joint="mf_dip" name="mf_dip_velocity_sensor"/>
+    <jointvel joint="rf_mcp" name="rf_mcp_velocity_sensor"/>
+    <jointvel joint="rf_rot" name="rf_rot_velocity_sensor"/>
+    <jointvel joint="rf_pip" name="rf_pip_velocity_sensor"/>
+    <jointvel joint="rf_dip" name="rf_dip_velocity_sensor"/>
+    <jointvel joint="th_cmc" name="th_cmc_velocity_sensor"/>
+    <jointvel joint="th_axl" name="th_axl_velocity_sensor"/>
+    <jointvel joint="th_mcp" name="th_mcp_velocity_sensor"/>
+    <jointvel joint="th_ipl" name="th_ipl_velocity_sensor"/>
+
     <!-- goal. -->
     <framequat name="cube_goal_orientation" objtype="body" objname="goal"/>
     <framezaxis name="cube_goal_upvector" objtype="body" objname="goal"/>

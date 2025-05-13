@@ -24,7 +24,7 @@ import mujoco
 from mujoco import mjx
 
 from mujoco_playground._src import mjx_env
-from mujoco_playground._src.manipulation.leap_hand import leap_hand_constants as consts
+from mujoco_playground._src.manipulation.leap_grasp_horizontal_v2 import leap_hand_constants as consts
 
 
 def get_assets() -> Dict[str, bytes]:
@@ -94,6 +94,18 @@ class LeapHandEnv(mjx_env.MjxEnv):
     return jp.concatenate([
         mjx_env.get_sensor_data(self.mj_model, data, f"{name}_position")
         for name in consts.FINGERTIP_NAMES
+    ])
+
+  def get_hand_joint_velocity(self, data: mjx.Data) -> jax.Array:
+    return jp.concatenate([
+      mjx_env.get_sensor_data(self.mj_model, data, f"{name}_velocity_sensor")
+      for name in consts.JOINT_NAMES
+    ])
+
+  def get_hand_joint_torque(self, data: mjx.Data) -> jax.Array:
+    return jp.concatenate([
+      mjx_env.get_sensor_data(self.mj_model, data, f"{name}_torque_sensor")
+      for name in consts.JOINT_NAMES
     ])
 
   # Accessors.
