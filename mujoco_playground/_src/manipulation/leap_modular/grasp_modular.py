@@ -29,6 +29,14 @@ from mujoco_playground._src.manipulation.leap_modular import base as leap_hand_b
 from mujoco_playground._src.manipulation.leap_modular import leap_hand_constants as consts
 
 
+from enum import Enum
+
+class Finger(Enum):
+    FF = 1
+    MF = 2
+    RF = 3
+    TH = 4
+
 def default_config() -> config_dict.ConfigDict:
   return config_dict.create(
       ctrl_dt=0.05,
@@ -100,6 +108,7 @@ class CubeGraspModular(leap_hand_base.LeapHandEnv):
     self._cube_body_id = self._mj_model.body("cube").id
     self._cube_mass = self._mj_model.body_subtreemass[self._cube_body_id]
     self._default_pose = self._init_q[self._hand_qids]
+    self._current_finger = Finger.MF
 
   def reset(self, rng: jax.Array) -> mjx_env.State:
     # Randomize the goal orientation.
@@ -165,6 +174,10 @@ class CubeGraspModular(leap_hand_base.LeapHandEnv):
         "step": 0,
         "steps_since_last_success": 0,
         "success_count": 0,
+        "last_act_ff": jp.zeros(int(self.mjx_model.nu/4)),
+        "last_act_mf": jp.zeros(int(self.mjx_model.nu/4)),
+        "last_act_rf": jp.zeros(int(self.mjx_model.nu/4)),
+        "last_act_th": jp.zeros(int(self.mjx_model.nu/4)),
         "last_act": jp.zeros(self.mjx_model.nu),
         "last_last_act": jp.zeros(self.mjx_model.nu),
         "motor_targets": data.ctrl,
@@ -197,11 +210,20 @@ class CubeGraspModular(leap_hand_base.LeapHandEnv):
 
     # Apply control and step the physics.
     delta = action * self._config.action_scale
+    
     motor_targets = state.data.ctrl
-    motor_targets = motor_targets.at[:4].set(state.data.ctrl[:4] + delta)
-
-    # delta = action * self._config.action_scale
-    # motor_targets = state.data.ctrl + delta
+    if self._current_finger == Finger.FF:
+        motor_targets = motor_targets.at[:4].set(state.data.ctrl[:4] + delta)
+        state.info["last_act_ff"] = action
+    elif self._current_finger == Finger.MF:
+        motor_targets = motor_targets.at[4:8].set(state.data.ctrl[4:8] + delta)
+        state.info["last_act_mf"] = action
+    elif self._current_finger == Finger.RF:
+        motor_targets = motor_targets.at[8:12].set(state.data.ctrl[8:12] + delta)
+        state.info["last_act_rf"] = action
+    elif self._current_finger == Finger.TH:
+        motor_targets = motor_targets.at[12:].set(state.data.ctrl[12:] + delta)
+        state.info["last_act_th"] = action
 
     motor_targets = jp.clip(motor_targets, self._lowers, self._uppers)
     motor_targets = (
@@ -229,8 +251,18 @@ class CubeGraspModular(leap_hand_base.LeapHandEnv):
 
     done = self._get_termination(data, state.info)
     obs = self._get_obs(data, state.info)
-
-    rewards = self._get_reward(data, action, state.info, state.metrics, done)
+    
+    # Combined finger actions: current action taken by network for current finger
+    # being contrlled and previous actions belonging to other fingers
+    combined_action  = jp.concatenate([
+        state.info["last_act_ff"],
+        state.info["last_act_mf"],
+        state.info["last_act_rf"],
+        state.info["last_act_th"]
+        ],
+        axis=0
+    )
+    rewards = self._get_reward(data, combined_action, state.info, state.metrics, done)
     rewards = {
         k: v * self._config.reward_config.scales[k] for k, v in rewards.items()
     }
@@ -255,14 +287,15 @@ class CubeGraspModular(leap_hand_base.LeapHandEnv):
     # Update info and metrics.
     state.info["step"] += 1
 
-    # state.info["last_last_act"] = state.info["last_act"]
-    # state.info["last_act"] =  state.info["last_act"].at[:4].set(action)
+    state.info["last_last_act"] = state.info["last_act"]
+    state.info["last_act"] =  combined_action
 
     for k, v in rewards.items():
       state.metrics[f"reward/{k}"] = v
 
     done = done.astype(reward.dtype)
     state = state.replace(data=data, obs=obs, reward=reward, done=done)
+    
     return state
 
   def _get_termination(self, data: mjx.Data, info: dict[str, Any]) -> jax.Array:
@@ -348,13 +381,15 @@ class CubeGraspModular(leap_hand_base.LeapHandEnv):
         cube_quat_uncorrupted, math.quat_inv(goal_quat)
     )
     xmat_diff_uncorrupted = math.quat_to_mat(quat_diff_uncorrupted).ravel()[3:]
-
+    
+    current_finger = jp.array([self._current_finger.value])
     state = jp.concatenate([
         noisy_joint_angles,  # 16
         qpos_error_history,  # 16 * history_len
         cube_pos_error_history,  # 3 * history_len
         cube_ori_error_history,  # 6 * history_len
         info["last_act"],  # 16
+        current_finger, # Current finger being controlled
     ])
 
     privileged_state = jp.concatenate([
@@ -368,6 +403,7 @@ class CubeGraspModular(leap_hand_base.LeapHandEnv):
         self.get_cube_angvel(data),
         info["pert_dir"],
         data.xfrc_applied[self._cube_body_id],
+        current_finger, # Current finger being controlled
     ])
 
     return {
@@ -494,10 +530,9 @@ class CubeGraspModular(leap_hand_base.LeapHandEnv):
     # Split the RNG key to ensure reproducibility
     rng, subkey = jax.random.split(rng)
 
-    # Generate uniform random values in the range [0, 1) with the same shape as the control ranges
     actions = jax.random.uniform(subkey, shape=self._lowers.shape, minval=-1.0, maxval=1.0)
-
     actions = actions[:4]
+
     return actions, rng
 
 def domain_randomize(model: mjx.Model, rng: jax.Array):
