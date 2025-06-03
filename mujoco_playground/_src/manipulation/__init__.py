@@ -31,7 +31,7 @@ from mujoco_playground._src.manipulation.leap_hand import rotate_z as leap_rotat
 
 
 from mujoco_playground._src.manipulation.leap_grasp import grasp
-from mujoco_playground._src.manipulation.leap_grasp_modular import grasp_modular
+from mujoco_playground._src.manipulation.leap_modular import grasp_modular
 
 from mujoco_playground._src.manipulation.leap_grasp_horizontal import grasp_horizontal
 
