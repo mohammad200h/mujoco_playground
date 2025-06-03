@@ -29,13 +29,10 @@ from mujoco_playground._src.manipulation.leap_modular import base as leap_hand_b
 from mujoco_playground._src.manipulation.leap_modular import leap_hand_constants as consts
 
 
-from enum import Enum
+from mujoco_playground._src.manipulation.leap_modular.base import Finger as Finger
+from mujoco_playground._src.manipulation.leap_modular.base import FingerTipGoalManager as FingerTipGoalManager
 
-class Finger(Enum):
-    FF = 1
-    MF = 2
-    RF = 3
-    TH = 4
+
 
 def default_config() -> config_dict.ConfigDict:
   return config_dict.create(
@@ -91,6 +88,7 @@ class CubeGraspModular(leap_hand_base.LeapHandEnv):
         config=config,
         config_overrides=config_overrides,
     )
+    self.goal_manager = FingerTipGoalManager()
     self._post_init()
 
   def _post_init(self) -> None:
@@ -108,7 +106,7 @@ class CubeGraspModular(leap_hand_base.LeapHandEnv):
     self._cube_body_id = self._mj_model.body("cube").id
     self._cube_mass = self._mj_model.body_subtreemass[self._cube_body_id]
     self._default_pose = self._init_q[self._hand_qids]
-    self._current_finger = Finger.MF
+    self._current_finger = Finger.FF
 
   def reset(self, rng: jax.Array) -> mjx_env.State:
     # Randomize the goal orientation.
@@ -416,7 +414,7 @@ class CubeGraspModular(leap_hand_base.LeapHandEnv):
   def _get_reward(
       self,
       data: mjx.Data,
-      action: jax.Array,
+      combined_action: jax.Array,
       info: dict[str, Any],
       metrics: dict[str, Any],
       done: jax.Array,
@@ -436,21 +434,14 @@ class CubeGraspModular(leap_hand_base.LeapHandEnv):
         jp.square(data.qpos[self._hand_qids] - self._default_pose)
     )
 
-    # hand_actions = info["last_act"]
-    # hand_actions =  hand_actions.at[:4].set(action)
-
     return {
         "orientation": self._reward_cube_orientation(data),
         "position": cube_pos_reward,
         "termination": terminated,
         "hand_pose": hand_pose_reward,
-        # "action_rate": self._cost_action_rate(
-        #     hand_actions, info["last_act"], info["last_last_act"]
-        # ),
         "action_rate": self._cost_action_rate(
-             info["last_act"], info["last_act"], info["last_last_act"]
+             combined_action, info["last_act"], info["last_last_act"]
         ),
-
         "joint_vel": self._cost_joint_vel(data),
         "energy": self._cost_energy(
             data.qvel[self._hand_dqids], data.actuator_force

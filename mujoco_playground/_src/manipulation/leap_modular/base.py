@@ -25,6 +25,9 @@ from mujoco import mjx
 
 from mujoco_playground._src import mjx_env
 from mujoco_playground._src.manipulation.leap_modular import leap_hand_constants as consts
+from enum import Enum
+import numpy as np
+
 
 
 def get_assets() -> Dict[str, bytes]:
@@ -127,3 +130,46 @@ def uniform_quat(rng: jax.Array) -> jax.Array:
       jp.sqrt(u) * jp.sin(2 * jp.pi * w),
       jp.sqrt(u) * jp.cos(2 * jp.pi * w),
   ])
+
+
+class Finger(Enum):
+    FF = 1
+    MF = 2
+    RF = 3
+    TH = 4
+
+class FingerTipGoalManager:
+    def __init__(self):
+        # Point cloud representing FF workspace
+        self._FF_WS = self._load_ff()
+        # Point cloud representing TH workspace
+        self._TH_WS = self._load_th()
+    
+    def _load_ff(self):
+        ff_data = np.load(consts.ROOT_PATH / "FF.npy")
+        return jp.array(ff_data)
+
+    def _load_th(self):
+        th_data = np.load(consts.ROOT_PATH / "TH.npy")
+        return jp.array(th_data)
+
+    def sample_ff_mf_rf(self, finger:Finger):
+        key = jax.random.PRNGKey(0)
+        indices = jax.random.choice(1, self._FF_WS .shape[0], shape=(k,), replace=False)
+        goal_xyz  = self._FF_WS [indices]
+
+        if finger==Finger.MF:
+            goal_xyz[0] += -0.00009
+            goal_xyz[1] += -0.0908
+        elif finger==Finger.RF:
+            goal_xyz[0] += -0.0001
+            goal_xyz[1] += -0.0454
+
+        return goal_xyz
+
+    def sample_th(self):
+        key = jax.random.PRNGKey(0)
+        indices = jax.random.choice(1, self._FF_WS .shape[0], shape=(k,), replace=False)
+        goal_xyz  = self._TH_WS [indices]
+
+        return goal_xyz
