@@ -132,6 +132,17 @@ def uniform_quat(rng: jax.Array) -> jax.Array:
   ])
 
 
+    
+def load_ff():
+    ff_data = np.load(consts.ROOT_PATH / "FF.npy")
+    return jp.array(ff_data)
+def load_th():
+    th_data = np.load(consts.ROOT_PATH / "TH.npy")
+    return jp.array(th_data)
+
+FF_WS = load_ff()
+TH_WS = load_th()
+
 class Finger(Enum):
     FF = 1
     MF = 2
@@ -141,35 +152,74 @@ class Finger(Enum):
 class FingerTipGoalManager:
     def __init__(self):
         # Point cloud representing FF workspace
-        self._FF_WS = self._load_ff()
+        self._FF_WS = FF_WS
         # Point cloud representing TH workspace
-        self._TH_WS = self._load_th()
+        self._TH_WS = TH_WS
+
+
+
+    def sample(self, finger:Finger, rng):
+        
+
+        if finger == Finger.TH:
+            ws = self._TH_WS
+        else:
+            ws = self._FF_WS
+        # jax.debug.print("Sampling from workspace of shape {}", ws.shape)
+
+        
+        indices = jax.random.choice(rng, 10, shape=(1,), replace=False)
+        # jax.debug.print("Sampling from workspace with index {}", indices)
+
+        goal_xyz = ws[indices]
+      
+        # Apply offsets for non-TH fingers
+        if finger == Finger.MF:
+            goal_xyz = goal_xyz + jp.array([-0.00009, -0.0908, 0.0])
+        elif finger == Finger.RF:
+            goal_xyz = goal_xyz + jp.array([-0.0001, -0.0454, 0.0])
+
+        return goal_xyz
+
+    def sample_goal_with_distance(self, finger: Finger, finger_tip_pos, rng, dist_threshold=0.05):
+        "sample a goal close to fingertip"
+        goal_xyz = self.sample(finger,rng)
+        # if finger == Finger.TH:
+        #     ws = self._TH_WS
+        # else:
+        #     ws = self._FF_WS
     
-    def _load_ff(self):
-        ff_data = np.load(consts.ROOT_PATH / "FF.npy")
-        return jp.array(ff_data)
-
-    def _load_th(self):
-        th_data = np.load(consts.ROOT_PATH / "TH.npy")
-        return jp.array(th_data)
-
-    def sample_ff_mf_rf(self, finger:Finger):
-        key = jax.random.PRNGKey(0)
-        indices = jax.random.choice(1, self._FF_WS .shape[0], shape=(k,), replace=False)
-        goal_xyz  = self._FF_WS [indices]
-
-        if finger==Finger.MF:
-            goal_xyz[0] += -0.00009
-            goal_xyz[1] += -0.0908
-        elif finger==Finger.RF:
-            goal_xyz[0] += -0.0001
-            goal_xyz[1] += -0.0454
-
+        # # Apply offsets for non-TH fingers
+        # if finger == Finger.MF:
+        #     ws = ws + jp.array([-0.00009, -0.0908, 0.0])
+        # elif finger == Finger.RF:
+        #     ws = ws + jp.array([-0.0001, -0.0454, 0.0])
+    
+        # # Compute distances to fingertip
+        # dists = jp.linalg.norm(ws - finger_tip_pos, axis=1)
+    
+        # # Create mask for close points
+        # close_mask = dists < dist_threshold
+    
+        # # Pad indices to fixed length (same as ws.shape[0])
+        # valid_indices = jp.nonzero(close_mask, size=ws.shape[0], fill_value=0)[0]
+    
+        # # We use ws.shape[0] as a safe upper bound
+        # index_to_sample = jax.random.choice(rng, 10, shape=(1,), replace=False)
+    
+        # # Sample either from full set or from close indices
+        # def sample_from_all():
+        #     return jax.random.choice(rng, ws.shape[0], shape=(1,), replace=False)
+    
+        # def sample_from_close():
+        #     return valid_indices[index_to_sample]
+    
+        # # Sum mask to count how many valid points we actually have
+        # num_valid = jp.sum(close_mask)
+    
+        # indices = jax.lax.cond(num_valid > 0, sample_from_close, sample_from_all)
+    
+        # goal_xyz = ws[indices]
         return goal_xyz
 
-    def sample_th(self):
-        key = jax.random.PRNGKey(0)
-        indices = jax.random.choice(1, self._FF_WS .shape[0], shape=(k,), replace=False)
-        goal_xyz  = self._TH_WS [indices]
 
-        return goal_xyz

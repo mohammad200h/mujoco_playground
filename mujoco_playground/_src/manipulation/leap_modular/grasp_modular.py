@@ -38,10 +38,10 @@ def default_config() -> config_dict.ConfigDict:
   return config_dict.create(
       ctrl_dt=0.05,
       sim_dt=0.01,
-      action_scale=0.5,
+      action_scale=0.1,
       action_repeat=1,
       ema_alpha=1.0,
-      episode_length=1000,
+      episode_length=500,
       success_threshold=0.1,
       history_len=1,
       obs_noise=config_dict.create(
@@ -62,6 +62,7 @@ def default_config() -> config_dict.ConfigDict:
               action_rate=-0.001,
               joint_vel=0.0,
               energy=-1e-3,
+              target_dist = 1,
           ),
           success_reward=100.0,
       ),
@@ -88,30 +89,29 @@ class CubeGraspModular(leap_hand_base.LeapHandEnv):
         config=config,
         config_overrides=config_overrides,
     )
-    self.goal_manager = FingerTipGoalManager()
+    self._goal_manager = FingerTipGoalManager()
     self._post_init()
 
   def _post_init(self) -> None:
     home_key = self._mj_model.keyframe("home")
     self._init_q = jp.array(home_key.qpos)
-    self._init_mpos = jp.array(home_key.mpos)
-    self._init_mquat = jp.array(home_key.mquat)
     self._lowers = self._mj_model.actuator_ctrlrange[:, 0]
     self._uppers = self._mj_model.actuator_ctrlrange[:, 1]
     self._hand_qids = mjx_env.get_qpos_ids(self.mj_model, consts.JOINT_NAMES)
     self._hand_dqids = mjx_env.get_qvel_ids(self.mj_model, consts.JOINT_NAMES)
-    self._cube_qids = mjx_env.get_qpos_ids(self.mj_model, ["cube_freejoint"])
     self._floor_geom_id = self._mj_model.geom("floor").id
-    self._cube_geom_id = self._mj_model.geom("cube").id
-    self._cube_body_id = self._mj_model.body("cube").id
-    self._cube_mass = self._mj_model.body_subtreemass[self._cube_body_id]
     self._default_pose = self._init_q[self._hand_qids]
     self._current_finger = Finger.FF
+  
 
   def reset(self, rng: jax.Array) -> mjx_env.State:
     # Randomize the goal orientation.
+    # goal = jp.array([[0.02378764, -0.03809963,  0.24809559]])
     rng, goal_rng = jax.random.split(rng)
-    goal_quat = leap_hand_base.uniform_quat(goal_rng)
+  
+    # Random Target for current finger
+    goal = self._goal_manager.sample(self._current_finger,goal_rng)
+    
 
     # Randomize the hand pose.
     rng, pos_rng, vel_rng = jax.random.split(rng, 3)
@@ -122,26 +122,18 @@ class CubeGraspModular(leap_hand_base.LeapHandEnv):
     )
     v_hand = 0.0 * jax.random.normal(vel_rng, (consts.NV,))
 
-    # Randomize the cube pose.
-    rng, p_rng, quat_rng = jax.random.split(rng, 3)
-    start_pos = jp.array([0.1, 0.0, 0.05]) + jax.random.uniform(
-        p_rng, (3,), minval=-0.01, maxval=0.01
-    )
-    start_quat = leap_hand_base.uniform_quat(quat_rng)
-    q_cube = jp.array([*start_pos, *start_quat])
-    v_cube = jp.zeros(6)
+ 
 
-    qpos = jp.concatenate([q_hand, q_cube])
-    qvel = jp.concatenate([v_hand, v_cube])
+    qpos = q_hand
+    qvel = v_hand
     data = mjx_env.init(
         self.mjx_model,
         qpos=qpos,
         ctrl=q_hand,
         qvel=qvel,
-        mocap_pos=self._init_mpos,
-        mocap_quat=goal_quat,
-    )
+        mocap_pos=goal
 
+    )
     rng, pert1, pert2, pert3 = jax.random.split(rng, 4)
     pert_wait_steps = jax.random.randint(
         pert1,
@@ -178,11 +170,14 @@ class CubeGraspModular(leap_hand_base.LeapHandEnv):
         "last_act_th": jp.zeros(int(self.mjx_model.nu/4)),
         "last_act": jp.zeros(self.mjx_model.nu),
         "last_last_act": jp.zeros(self.mjx_model.nu),
+        "last_dist": jp.array([0.0]),
+        "last_last_dist": jp.array([0.0]),
         "motor_targets": data.ctrl,
         "qpos_error_history": jp.zeros(self._config.history_len * 16),
         "cube_pos_error_history": jp.zeros(self._config.history_len * 3),
         "cube_ori_error_history": jp.zeros(self._config.history_len * 6),
         "goal_quat_dquat": jp.zeros(3),
+        "goal":goal,
         # Perturbation.
         "pert_wait_steps": pert_wait_steps,
         "pert_duration_steps": pert_duration_steps,
@@ -233,9 +228,10 @@ class CubeGraspModular(leap_hand_base.LeapHandEnv):
         self.mjx_model, state.data, motor_targets, self.n_substeps
     )
     state.info["motor_targets"] = motor_targets
+    dist = self._finger_dist(data,state.info)
 
-    ori_error = self._cube_orientation_error(data)
-    success = ori_error < self._config.success_threshold
+    
+    success = dist < self._config.success_threshold
     state.info["steps_since_last_success"] = jp.where(
         success, 0, state.info["steps_since_last_success"] + 1
     )
@@ -265,32 +261,36 @@ class CubeGraspModular(leap_hand_base.LeapHandEnv):
         k: v * self._config.reward_config.scales[k] for k, v in rewards.items()
     }
     reward = sum(rewards.values()) * self.dt  # pylint: disable=redefined-outer-name
-
-    # Sample a new goal orientation.
-    state.info["rng"], goal_rng = jax.random.split(state.info["rng"])
-    state.info["goal_quat_dquat"] = jp.where(
-        success,
-        3 + jax.random.uniform(goal_rng, (3,), minval=-2, maxval=2),
-        state.info["goal_quat_dquat"] * 0.8,
-    )
-    goal_quat = math.quat_integrate(
-        state.data.mocap_quat[0],
-        state.info["goal_quat_dquat"],
-        2 * jp.array(self.dt),
-    )
-    data = data.replace(mocap_quat=jp.array([goal_quat]))
-    state.metrics["reward/success"] = success.astype(float)
     reward += success * self._config.reward_config.success_reward
 
-    # Update info and metrics.
-    state.info["step"] += 1
+  
+  
 
+    # Update info and metrics.
     state.info["last_last_act"] = state.info["last_act"]
     state.info["last_act"] =  combined_action
+    state.info["last_dist"] = jp.array([dist])
 
     for k, v in rewards.items():
       state.metrics[f"reward/{k}"] = v
-
+    
+    rng, goal_rng = jax.random.split(state.info["rng"])
+    # Random Target for current finger
+    goal = self._goal_manager.sample(self._current_finger,goal_rng)
+    # Randomize the hand pose.
+    state.info["rng"], pos_rng, vel_rng = jax.random.split(rng, 3)
+    q_hand = jp.clip(
+        self._default_pose + 0.1 * jax.random.normal(pos_rng, (consts.NQ,)),
+        self._lowers,
+        self._uppers,
+    )
+    mocap_pos = jp.where(success, goal, data.mocap_pos)
+    qpos = jp.where(success, q_hand, data.qpos)
+    data = data.replace(
+        mocap_pos=mocap_pos,
+        qpos = qpos
+    )
+    
     done = done.astype(reward.dtype)
     state = state.replace(data=data, obs=obs, reward=reward, done=done)
     
@@ -298,9 +298,8 @@ class CubeGraspModular(leap_hand_base.LeapHandEnv):
 
   def _get_termination(self, data: mjx.Data, info: dict[str, Any]) -> jax.Array:
     del info  # Unused.
-    fall_termination = self.get_cube_position(data)[2] < -0.05
     nans = jp.any(jp.isnan(data.qpos)) | jp.any(jp.isnan(data.qvel))
-    return fall_termination | nans
+    return   nans
 
   def _get_obs(
       self, data: mjx.Data, info: dict[str, Any]
@@ -323,70 +322,17 @@ class CubeGraspModular(leap_hand_base.LeapHandEnv):
     )
     info["qpos_error_history"] = qpos_error_history
 
-    def _get_cube_pose(data: mjx.Data) -> jax.Array:
-      """Returns (potentially) noisy cube pose (xyz,wxyz)."""
-      cube_pos = self.get_cube_position(data)
-      cube_quat = self.get_cube_orientation(data)
-      info["rng"], pos_rng, ori_rng = jax.random.split(info["rng"], 3)
-      noisy_cube_quat = mjx._src.math.normalize(
-          cube_quat
-          + jax.random.normal(ori_rng, shape=(4,))
-          * self._config.obs_noise.level
-          * self._config.obs_noise.scales.cube_ori
-      )
-      noisy_cube_pos = (
-          cube_pos
-          + (2 * jax.random.uniform(pos_rng, shape=cube_pos.shape) - 1)
-          * self._config.obs_noise.level
-          * self._config.obs_noise.scales.cube_pos
-      )
-      return jp.concatenate([noisy_cube_pos, noisy_cube_quat])
-
-    # Noisy cube pose.
-    noisy_pose = _get_cube_pose(data)
-    info["rng"], key1, key2, key3 = jax.random.split(info["rng"], 4)
-    rand_quat = leap_hand_base.uniform_quat(key1)
-    rand_pos = jax.random.uniform(key2, (3,), minval=-0.5, maxval=0.5)
-    rand_pose = jp.concatenate([rand_pos, rand_quat])
-    m = self._config.obs_noise.level * jax.random.bernoulli(
-        key3, self._config.obs_noise.random_ori_injection_prob
-    )
-    noisy_pose = noisy_pose * (1 - m) + rand_pose * m
-
-    # Cube position error history.
-    palm_pos = self.get_palm_position(data)
-    cube_pos_error = palm_pos - noisy_pose[:3]
-    cube_pos_error_history = (
-        jp.roll(info["cube_pos_error_history"], 3).at[:3].set(cube_pos_error)
-    )
-    info["cube_pos_error_history"] = cube_pos_error_history
-
-    # Cube orientation error history.
-    goal_quat = self.get_cube_goal_orientation(data)
-    quat_diff = mjx._src.math.quat_mul(
-        noisy_pose[3:], mjx._src.math.quat_inv(goal_quat)
-    )
-    xmat_diff = mjx._src.math.quat_to_mat(quat_diff).ravel()[3:]
-    cube_ori_error_history = (
-        jp.roll(info["cube_ori_error_history"], 6).at[:6].set(xmat_diff)
-    )
-    info["cube_ori_error_history"] = cube_ori_error_history
-
-    # Uncorrupted cube pose for critic.
-    cube_pos_error_uncorrupted = palm_pos - self.get_cube_position(data)
-    cube_quat_uncorrupted = self.get_cube_orientation(data)
-    quat_diff_uncorrupted = math.quat_mul(
-        cube_quat_uncorrupted, math.quat_inv(goal_quat)
-    )
-    xmat_diff_uncorrupted = math.quat_to_mat(quat_diff_uncorrupted).ravel()[3:]
-    
+    dist = jp.array([self._finger_dist(data,info)])
+    goal = jp.squeeze(info["goal"], axis=0)
     current_finger = jp.array([self._current_finger.value])
+    
     state = jp.concatenate([
         noisy_joint_angles,  # 16
         qpos_error_history,  # 16 * history_len
-        cube_pos_error_history,  # 3 * history_len
-        cube_ori_error_history,  # 6 * history_len
         info["last_act"],  # 16
+        info["last_dist"],
+        goal,
+        dist,
         current_finger, # Current finger being controlled
     ])
 
@@ -394,14 +340,7 @@ class CubeGraspModular(leap_hand_base.LeapHandEnv):
         state,
         data.qpos[self._hand_qids],
         data.qvel[self._hand_dqids],
-        self.get_fingertip_positions(data),
-        cube_pos_error_uncorrupted,
-        xmat_diff_uncorrupted,
-        self.get_cube_linvel(data),
-        self.get_cube_angvel(data),
-        info["pert_dir"],
-        data.xfrc_applied[self._cube_body_id],
-        current_finger, # Current finger being controlled
+        self._finger_tip_pose(data),
     ])
 
     return {
@@ -421,24 +360,10 @@ class CubeGraspModular(leap_hand_base.LeapHandEnv):
   ) -> dict[str, jax.Array]:
     del done, metrics  # Unused.
 
-    cube_pos = self.get_cube_position(data)
-    palm_pos = self.get_palm_position(data)
-    cube_pose_mse = jp.linalg.norm(palm_pos - cube_pos)
-    cube_pos_reward = reward.tolerance(
-        cube_pose_mse, (0, 0.02), margin=0.05, sigmoid="linear"
-    )
-
-    terminated = self._get_termination(data, info)
-
-    hand_pose_reward = jp.sum(
-        jp.square(data.qpos[self._hand_qids] - self._default_pose)
-    )
+    
 
     return {
-        "orientation": self._reward_cube_orientation(data),
-        "position": cube_pos_reward,
-        "termination": terminated,
-        "hand_pose": hand_pose_reward,
+        "target_dist":self._finger_to_goal_dist_reward(data,info),
         "action_rate": self._cost_action_rate(
              combined_action, info["last_act"], info["last_last_act"]
         ),
@@ -448,21 +373,33 @@ class CubeGraspModular(leap_hand_base.LeapHandEnv):
         ),
     }
 
+  def _finger_to_goal_dist_reward(self,data: mjx.Data,info):
+    dist = self._finger_dist(data,info)
+
+    reward = -1 * jp.pow((dist),2)
+    reward = jp.exp(reward)
+    return reward
+
+  def _finger_tip_pose(self,data: mjx.Data):
+    all_fingertips_pos = self.get_fingertip_positions(data)
+    start = (self._current_finger.value - 1) * 3
+    end = self._current_finger.value * 3
+    fingertip_pos = all_fingertips_pos[start:end]
+
+    return fingertip_pos
+
+  def _finger_dist(self,data: mjx.Data,info):
+    fingertip_pos = self._finger_tip_pose(data)
+    # goal = jp.squeeze(info["goal"], axis=0)
+    dist = jp.linalg.norm(info["goal"] - fingertip_pos)
+
+    return dist
+
   def _cost_energy(
       self, qvel: jax.Array, qfrc_actuator: jax.Array
   ) -> jax.Array:
     return jp.sum(jp.abs(qvel) * jp.abs(qfrc_actuator))
 
-  def _cube_orientation_error(self, data: mjx.Data):
-    cube_ori = self.get_cube_orientation(data)
-    cube_goal_ori = self.get_cube_goal_orientation(data)
-    quat_diff = math.quat_mul(cube_ori, math.quat_inv(cube_goal_ori))
-    quat_diff = math.normalize(quat_diff)
-    return 2.0 * jp.asin(jp.clip(math.norm(quat_diff[1:]), a_max=1.0))
-
-  def _reward_cube_orientation(self, data: mjx.Data) -> jax.Array:
-    ori_error = self._cube_orientation_error(data)
-    return reward.tolerance(ori_error, (0, 0.2), margin=jp.pi, sigmoid="linear")
 
   def _cost_action_rate(
       self, act: jax.Array, last_act: jax.Array, last_last_act: jax.Array
