@@ -53,6 +53,9 @@ warp-lang = { index = "nvidia" }
 mujoco-mjx = { git = "https://github.com/google-deepmind/mujoco", rev = "main", subdirectory = "mjx" }
 
 [project.optional-dependencies]
+gpu = [
+    "jax[cuda12]",
+]
 warp = [
     "warp-lang>=1.9.0.dev",
 ]
