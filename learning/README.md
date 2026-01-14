@@ -30,12 +30,18 @@ Use `python train_jax_ppo.py --help` to see possible options and usage. Logs and
 To train with RSL-RL, you can use the `train_rsl_rl.py` script. This script uses the RSL-RL algorithm to train an agent on a given environment.
 
 ```bash
-python train_rsl_rl.py --env_name=LeapCubeReorient
+python3 train_rsl_rl.py --env_name=LeapCubeReorient
+python3 train_rsl_rl.py --env_name=LeapXELACubeReorient
+python3 profile_rsl_rl.py --env_name=LeapXELACubeReorient
 ```
 
 To render the behaviour from the resulting policy:
 ```bash
 python learning/train_rsl_rl.py --env_name LeapCubeReorient --play_only --load_run_name <run_name>
+python learning/train_rsl_rl.py --env_name LeapXELACubeReorient --play_only --load_run_name <run_name>
+
+python3 learning/train_rsl_rl.py --env_name LeapXELACubeReorient --play_only --load_run_name LeapXELACubeReorient-20251229-140544
+
 ```
 
 where `run_name` is the name of the run you want to load (will be printed in the console when the training run is started).

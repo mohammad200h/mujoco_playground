@@ -156,8 +156,11 @@ class RSLRLBraxWrapper(VecEnv):
     self.env_state = None
 
   def step(self, action):
+    print("wrapper_torch.py: step::1")
     action = torch.clip(action, -1.0, 1.0)  # pytype: disable=attribute-error
     action = _torch_to_jax(action)
+    print("wrapper_torch.py: step::2")
+
     self.env_state = self.step_fn(self.env_state, action)
     critic_obs = None
     if self.asymmetric_obs:
@@ -198,9 +201,10 @@ class RSLRLBraxWrapper(VecEnv):
     return obs, reward, done, info_ret
 
   def reset(self):
+    print("wrapper_torch.py: reset::1")
     # todo add random init like in collab examples?
     self.env_state = self.reset_fn(self.key_reset)
-
+    print("wrapper_torch.py: reset::2")
     if self.asymmetric_obs:
       obs = _jax_to_torch(self.env_state.obs["state"])
       critic_obs = _jax_to_torch(self.env_state.obs["privileged_state"])
@@ -208,6 +212,7 @@ class RSLRLBraxWrapper(VecEnv):
     else:
       obs = _jax_to_torch(self.env_state.obs)
       obs = {"state": obs}
+      print(f"obs: {obs}")
     return TensorDict(obs, batch_size=[self.num_envs])
 
   def get_observations(self):

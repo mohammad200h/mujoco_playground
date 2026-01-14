@@ -23,6 +23,7 @@ import warnings
 from etils import epath
 from flax import struct
 import jax
+import jax.numpy as jnp
 from ml_collections import config_dict
 import mujoco
 from mujoco import mjx
@@ -164,9 +165,61 @@ def step(
     action: jax.Array,
     n_substeps: int = 1,
 ) -> mjx.Data:
+  # Validate inputs for NaN values (JIT-compatible)
+  # Use debug.callback to report when NaNs are detected and cause an error
+  def _check_nan(value, name, msg):
+    has_nan = jnp.any(jnp.isnan(value))
+    # Print error message via callback
+    jax.debug.callback(
+        lambda x, n, m: print(f"ERROR: NaN detected in {n}. {m}") if x else None,
+        has_nan,
+        name,
+        msg,
+    )
+    # Cause a division by zero error if NaN is present (JIT-compatible way to fail)
+    # This will stop execution and provide a clear error trace
+    _dummy = jax.lax.cond(
+        has_nan,
+        lambda: jnp.array(1.0) / jnp.array(0.0),  # Division by zero
+        lambda: jnp.array(0.0),
+    )
+    return value
+  
+  # Check inputs - will cause error if NaN detected
+  _check_nan(
+      action,
+      "action",
+      "NaN detected in action input to step(). Check the action generation logic.",
+  )
+  _check_nan(
+      data.qpos,
+      "data.qpos",
+      "NaN detected in data.qpos input to step(). The simulation state is invalid.",
+  )
+  _check_nan(
+      data.qvel,
+      "data.qvel",
+      "NaN detected in data.qvel input to step(). The simulation state is invalid.",
+  )
+  
   def single_step(data, _):
     data = data.replace(ctrl=action)
     data = mjx.step(model, data)
+    # Check for NaN after each substep (JIT-compatible)
+    _check_nan(
+        data.qpos,
+        "data.qpos after mjx.step()",
+        "NaN detected in data.qpos after mjx.step(). "
+        "This may indicate numerical instability in the physics simulation, "
+        "invalid model parameters, or extreme actions.",
+    )
+    _check_nan(
+        data.qvel,
+        "data.qvel after mjx.step()",
+        "NaN detected in data.qvel after mjx.step(). "
+        "This may indicate numerical instability in the physics simulation, "
+        "invalid model parameters, or extreme actions.",
+    )
     return data, None
 
   return jax.lax.scan(single_step, data, (), n_substeps)[0]

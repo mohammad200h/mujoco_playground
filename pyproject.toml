@@ -82,7 +82,7 @@ dev = [
 learning = [
     "rsl-rl-lib==3.0.1",
     "wandb",
-    "tensorboard"==2.20.0
+    "tensorboard==2.20.0"
 ]
 all = [
     "playground[dev]",

@@ -9,6 +9,11 @@ RUN add-apt-repository universe
 
 RUN apt-get update && apt-get install -y git
 RUN apt-get update && apt install -y mesa-utils
+# Install EGL libraries for headless MuJoCo rendering
+RUN apt-get update && apt-get install -y libegl1-mesa libgl1-mesa-glx libglib2.0-0
+# Set MuJoCo to use EGL for headless rendering
+RUN apt install -y ffmpeg 
+ENV MUJOCO_GL=egl
 ##### python3.11 ######
 RUN apt-get update && add-apt-repository ppa:deadsnakes/ppa
 RUN apt-get install -y python3.11 python3.11-venv python3.11-dev
@@ -27,7 +32,8 @@ RUN mkdir /etc/xdg/terminator/
 WORKDIR workspace
 ###### 
 COPY . /workspace/mujoco_playground
-RUN cd /workspace/mujoco_playground && pip install -e ".[all,gpu]"
+RUN cd /workspace/mujoco_playground && pip3 install -e ".[all,gpu]"
+
 
 ###### Shell #######
 CMD /bin/bash
