@@ -40,7 +40,11 @@ from mujoco_playground.config import dm_control_suite_params
 from mujoco_playground.config import locomotion_params
 from mujoco_playground.config import manipulation_params
 import tensorboardX
-import wandb
+
+try:
+  import wandb
+except ImportError:
+  wandb = None
 
 
 xla_flags = os.environ.get("XLA_FLAGS", "")
@@ -68,6 +72,11 @@ _ENV_NAME = flags.DEFINE_string(
     f"Name of the environment. One of {', '.join(registry.ALL_ENVS)}",
 )
 _IMPL = flags.DEFINE_enum("impl", "jax", ["jax", "warp"], "MJX implementation")
+_PLAYGROUND_CONFIG_OVERRIDES = flags.DEFINE_string(
+    "playground_config_overrides",
+    None,
+    "Overrides for the playground env config.",
+)
 _VISION = flags.DEFINE_boolean("vision", False, "Use vision input")
 _LOAD_CHECKPOINT_PATH = flags.DEFINE_string(
     "load_checkpoint_path", None, "Path to load checkpoint from"
@@ -260,7 +269,12 @@ def main(argv):
   if _VISION.value:
     env_cfg.vision = True
     env_cfg.vision_config.render_batch_size = ppo_params.num_envs
-  env = registry.load(_ENV_NAME.value, config=env_cfg)
+  env_cfg_overrides = {}
+  if _PLAYGROUND_CONFIG_OVERRIDES.value is not None:
+    env_cfg_overrides = json.loads(_PLAYGROUND_CONFIG_OVERRIDES.value)
+  env = registry.load(
+      _ENV_NAME.value, config=env_cfg, config_overrides=env_cfg_overrides
+  )
   if _RUN_EVALS.present:
     ppo_params.run_evals = _RUN_EVALS.value
   if _LOG_TRAINING_METRICS.present:
@@ -269,6 +283,8 @@ def main(argv):
     ppo_params.training_metrics_steps = _TRAINING_METRICS_STEPS.value
 
   print(f"Environment Config:\n{env_cfg}")
+  if env_cfg_overrides:
+    print(f"Environment Config Overrides:\n{env_cfg_overrides}\n")
   print(f"PPO Training Parameters:\n{ppo_params}")
 
   # Generate unique experiment name
@@ -287,6 +303,11 @@ def main(argv):
 
   # Initialize Weights & Biases if required
   if _USE_WANDB.value and not _PLAY_ONLY.value:
+    if wandb is None:
+      raise ImportError(
+          "wandb is required for --use_wandb. "
+          "Install via: pip install wandb"
+      )
     wandb.init(project="mjxrl", name=exp_name)
     wandb.config.update(env_cfg.to_dict())
     wandb.config.update({"env_name": _ENV_NAME.value})
@@ -400,7 +421,9 @@ def main(argv):
   # Load evaluation environment.
   eval_env = None
   if not _VISION.value:
-    eval_env = registry.load(_ENV_NAME.value, config=env_cfg)
+    eval_env = registry.load(
+        _ENV_NAME.value, config=env_cfg, config_overrides=env_cfg_overrides
+    )
   num_envs = 1
   if _VISION.value:
     num_envs = env_cfg.vision_config.render_batch_size
@@ -411,7 +434,9 @@ def main(argv):
     from rscope import brax as rscope_utils
 
     if not _VISION.value:
-      rscope_env = registry.load(_ENV_NAME.value, config=env_cfg)
+      rscope_env = registry.load(
+          _ENV_NAME.value, config=env_cfg, config_overrides=env_cfg_overrides
+      )
       rscope_env = wrapper.wrap_for_brax_training(
           rscope_env,
           episode_length=ppo_params.episode_length,
@@ -515,5 +540,10 @@ def main(argv):
     print(f"Rollout video saved as 'rollout{i}.mp4'.")
 
 
-if __name__ == "__main__":
+def run():
+  """Entry point for uv/pip script."""
   app.run(main)
+
+
+if __name__ == "__main__":
+  run()
