@@ -36,10 +36,10 @@ import torch
 import warp as wp
 
 from jax import config
-config.update("jax_debug_nans", True)
+# config.update("jax_debug_nans", True)
 
 # Enable full JAX tracebacks for better debugging
-os.environ["JAX_TRACEBACK_FILTERING"] = "off"
+# os.environ["JAX_TRACEBACK_FILTERING"] = "off"
 
 try:
   import wandb  # pylint: disable=g-import-not-at-top
@@ -79,7 +79,7 @@ _USE_WANDB = flags.DEFINE_boolean(
 )
 _SUFFIX = flags.DEFINE_string("suffix", None, "Suffix for the experiment name.")
 _SEED = flags.DEFINE_integer("seed", 1, "Random seed.")
-_NUM_ENVS = flags.DEFINE_integer("num_envs", 512, "Number of parallel envs.")
+_NUM_ENVS = flags.DEFINE_integer("num_envs", 4096, "Number of parallel envs.")
 _DEVICE = flags.DEFINE_string("device", "cuda:0", "Device for training.")
 _MULTI_GPU = flags.DEFINE_boolean(
     "multi_gpu", False, "If true, use multi-GPU training (distributed)."
