@@ -245,49 +245,56 @@ def main(argv):
   jit_step = jax.jit(eval_env.step)
 
   rng = jax.random.PRNGKey(_SEED.value)
-  state = jit_reset(rng)
-  rollout = [state]
+  num_episodes = 10  # Change this to run more/fewer episodes.
 
   # We’ll assume your environment’s observation is in state.obs["state"].
   is_dict_obs = isinstance(eval_env.observation_size, dict)
-  obs = state.obs["state"] if is_dict_obs else state.obs
-  obs_torch = wrapper_torch._jax_to_torch(obs)
 
-  for _ in range(env_cfg.episode_length):
-    with torch.no_grad():
-      actions = policy({"state": obs_torch})
-      actions = torch.clip(actions, -1.0, 1.0)  # from wrapper_torch.py
-    # Step environment
-    state = jit_step(state, wrapper_torch._torch_to_jax(actions.flatten()))
-    rollout.append(state)
-    obs = state.obs["state"] if is_dict_obs else state.obs
-    obs_torch = wrapper_torch._jax_to_torch(obs)
-    if state.done:
-      break
-
-  reward_sum = sum(s.reward for s in rollout)
-  print(f"Rollout reward: {reward_sum}")
-
-  # Render
+  # Set up rendering configuration once.
   scene_option = mujoco.MjvOption()
   scene_option.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = True
   scene_option.flags[mujoco.mjtVisFlag.mjVIS_PERTFORCE] = True
   scene_option.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = False
 
   render_every = 2
-  # If your environment is wrapped multiple times, adjust as needed:
-  base_env = eval_env  # or brax_env.env.env.env
+  base_env = eval_env  # If wrapped multiple times, adjust as needed.
   fps = 1.0 / base_env.dt / render_every
-  traj = rollout[::render_every]
-  frames = eval_env.render(
-      traj,
-      camera=_CAMERA.value,
-      height=480,
-      width=640,
-      scene_option=scene_option,
-  )
-  media.write_video("rollout.mp4", frames, fps=fps)
-  print("Rollout video saved as 'rollout.mp4'.")
+
+  for ep in range(num_episodes):
+    rng, rng_reset = jax.random.split(rng)
+    state = jit_reset(rng_reset)
+    rollout = [state]
+
+    obs = state.obs["state"] if is_dict_obs else state.obs
+    obs_torch = wrapper_torch._jax_to_torch(obs)
+
+    for _ in range(env_cfg.episode_length):
+      with torch.no_grad():
+        actions = policy({"state": obs_torch})
+        actions = torch.clip(actions, -1.0, 1.0)  # from wrapper_torch.py
+      # Step environment
+      state = jit_step(state, wrapper_torch._torch_to_jax(actions.flatten()))
+      rollout.append(state)
+      obs = state.obs["state"] if is_dict_obs else state.obs
+      obs_torch = wrapper_torch._jax_to_torch(obs)
+      if state.done:
+        break
+
+    reward_sum = sum(s.reward for s in rollout)
+    print(f"Episode {ep} reward: {reward_sum}")
+
+    # Render this episode to its own video file.
+    traj = rollout[::render_every]
+    frames = eval_env.render(
+        traj,
+        camera=_CAMERA.value,
+        height=480,
+        width=640,
+        scene_option=scene_option,
+    )
+    video_name = f"rollout_ep{ep}.mp4"
+    media.write_video(video_name, frames, fps=fps)
+    print(f"Rollout video for episode {ep} saved as '{video_name}'.")
 
 
 def run():

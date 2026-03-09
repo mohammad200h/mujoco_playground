@@ -53,17 +53,41 @@ os.environ["XLA_FLAGS"] = xla_flags
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 os.environ["MUJOCO_GL"] = "egl"
 
+# Check if warp implementation is requested and restrict to single GPU
+# Warp has issues with JAX's multi-GPU replication strategy
+# Set CUDA_VISIBLE_DEVICES before JAX imports to avoid multi-GPU issues
+import sys
+if len(sys.argv) > 1:
+  # Check if --impl warp or --impl=warp is in arguments
+  warp_requested = False
+  for i, arg in enumerate(sys.argv):
+    # Handle --impl warp format
+    if arg == "--impl" and i + 1 < len(sys.argv) and sys.argv[i + 1] == "warp":
+      warp_requested = True
+      break
+    # Handle --impl=warp format
+    if arg.startswith("--impl=") and arg.split("=", 1)[1] == "warp":
+      warp_requested = True
+      break
+  
+  if warp_requested and "CUDA_VISIBLE_DEVICES" not in os.environ:
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    print(
+        "Warp implementation detected. Setting CUDA_VISIBLE_DEVICES=0 "
+        "to avoid multi-GPU CUDA resource handle errors."
+    )
+
 # Ignore the info logs from brax
 logging.set_verbosity(logging.WARNING)
 
 # Suppress warnings
 
 # Suppress RuntimeWarnings from JAX
-warnings.filterwarnings("ignore", category=RuntimeWarning, module="jax")
+# warnings.filterwarnings("ignore", category=RuntimeWarning, module="jax")
 # Suppress DeprecationWarnings from JAX
-warnings.filterwarnings("ignore", category=DeprecationWarning, module="jax")
+# warnings.filterwarnings("ignore", category=DeprecationWarning, module="jax")
 # Suppress UserWarnings from absl (used by JAX and TensorFlow)
-warnings.filterwarnings("ignore", category=UserWarning, module="absl")
+# warnings.filterwarnings("ignore", category=UserWarning, module="absl")
 
 
 _ENV_NAME = flags.DEFINE_string(
@@ -211,6 +235,17 @@ def main(argv):
   """Run training and evaluation for the specified environment."""
 
   del argv
+
+  # Verify single GPU usage for warp implementation
+  # (CUDA_VISIBLE_DEVICES should have been set earlier if warp is used)
+  if _IMPL.value == "warp":
+    gpu_devices = [d for d in jax.devices() if d.device_kind == "gpu"]
+    if len(gpu_devices) > 1:
+      print(
+          f"Warning: Warp implementation with {len(gpu_devices)} GPUs detected. "
+          f"Multi-GPU may cause CUDA resource handle errors. "
+          f"Consider setting CUDA_VISIBLE_DEVICES=0 before running."
+      )
 
   # Load environment configuration
   env_cfg = registry.get_default_config(_ENV_NAME.value)

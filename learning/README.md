@@ -23,6 +23,13 @@ To train a vision-based policy using pixel observations:
 python train_jax_ppo.py --env_name=CartpoleBalance --vision
 ```
 
+To train with the Warp implementation (faster GPU-accelerated physics):
+```bash
+python train_jax_ppo.py --env_name=CartpoleBalance --impl warp
+```
+
+**Note:** When using the `--impl warp` option, the script automatically restricts to a single GPU (`CUDA_VISIBLE_DEVICES=0`) to avoid CUDA resource handle errors that can occur with JAX's multi-GPU replication strategy. If you have multiple GPUs and want to use a specific one, set `CUDA_VISIBLE_DEVICES` before running the script.
+
 Use `python train_jax_ppo.py --help` to see possible options and usage. Logs and checkpoints are saved in `logs` directory.
 
 ## Training with RSL-RL
@@ -31,7 +38,8 @@ To train with RSL-RL, you can use the `train_rsl_rl.py` script. This script uses
 
 ```bash
 python3 train_rsl_rl.py --env_name=LeapCubeReorient
-python3 train_rsl_rl.py --env_name=LeapXELACubeReorient
+python3 train_rsl_rl.py --env_name=LeapXELACubeReorient --impl warp
+python3 train_rsl_rl.py --env_name=LeapXELACubeReorient --impl warp --playground_config_overrides='{"nconmax": 50000 }
 python3 profile_rsl_rl.py --env_name=LeapXELACubeReorient
 ```
 
@@ -41,6 +49,13 @@ python learning/train_rsl_rl.py --env_name LeapCubeReorient --play_only --load_r
 python learning/train_rsl_rl.py --env_name LeapXELACubeReorient --play_only --load_run_name <run_name>
 
 python3 learning/train_rsl_rl.py --env_name LeapXELACubeReorient --play_only --load_run_name LeapXELACubeReorient-20251229-140544
+python3 learning/train_rsl_rl.py \
+  --env_name LeapXELACubeReorient \
+  --impl warp \
+  --playground_config_overrides='{"nconmax": 50000}' \
+  --play_only \
+  --load_run_name /workspace/mujoco_playground/trained_models/leapXela/LeapXELACubeReorient-20260218-182854
+
 
 ```
 
