@@ -31,15 +31,12 @@ from mujoco_playground import registry
 from mujoco_playground import wrapper_torch
 from mujoco_playground.config import locomotion_params
 from mujoco_playground.config import manipulation_params
+from mujoco_playground._src import memory_utils
 from rsl_rl.runners import OnPolicyRunner
 import torch
 import warp as wp
 
-from jax import config
-# config.update("jax_debug_nans", True)
 
-# Enable full JAX tracebacks for better debugging
-# os.environ["JAX_TRACEBACK_FILTERING"] = "off"
 
 try:
   import wandb  # pylint: disable=g-import-not-at-top
@@ -63,12 +60,6 @@ _ENV_NAME = flags.DEFINE_string(
         f"{', '.join(mujoco_playground.registry.ALL_ENVS)}"
     ),
 )
-_IMPL = flags.DEFINE_enum("impl", "jax", ["jax", "warp"], "MJX implementation")
-_PLAYGROUND_CONFIG_OVERRIDES = flags.DEFINE_string(
-    "playground_config_overrides",
-    None,
-    "Overrides for the playground env config.",
-)
 _LOAD_RUN_NAME = flags.DEFINE_string(
     "load_run_name", None, "Run name to load from (for checkpoint restoration)."
 )
@@ -85,7 +76,6 @@ _USE_WANDB = flags.DEFINE_boolean(
 )
 _SUFFIX = flags.DEFINE_string("suffix", None, "Suffix for the experiment name.")
 _SEED = flags.DEFINE_integer("seed", 1, "Random seed.")
-_NUM_ENVS = flags.DEFINE_integer("num_envs", 4096, "Number of parallel envs.")
 _DEVICE = flags.DEFINE_string("device", "cuda:0", "Device for training.")
 _MULTI_GPU = flags.DEFINE_boolean(
     "multi_gpu", False, "If true, use multi-GPU training (distributed)."
@@ -125,20 +115,13 @@ def main(argv):
     device = _DEVICE.value
     device_rank = int(device.split(":")[-1]) if "cuda" in device else 0
 
-  # If play-only, use fewer envs
-  num_envs = 1 if _PLAY_ONLY.value else _NUM_ENVS.value
-
-  print(f"num_envs::{num_envs}")
+  # num_envs set to one to measure resources consumed for a single env
+  # num_envs = 1 
+  num_envs = 512
 
   # Load default config from registry
   env_cfg = registry.get_default_config(_ENV_NAME.value)
-  env_cfg.impl = _IMPL.value
   print(f"Environment config:\n{env_cfg}")
-
-  env_cfg_overrides = {}
-  if _PLAYGROUND_CONFIG_OVERRIDES.value is not None:
-    env_cfg_overrides = json.loads(_PLAYGROUND_CONFIG_OVERRIDES.value)
-    print(f"Environment config overrides:\n{env_cfg_overrides}\n")
 
   # Generate unique experiment name
   now = datetime.now()
@@ -181,10 +164,29 @@ def main(argv):
   def render_callback(_, state):
     render_trajectory.append(state)
 
+
+  print("I am here 1")
   # Create the environment
   raw_env = registry.load(
-      _ENV_NAME.value, config=env_cfg, config_overrides=env_cfg_overrides
+      _ENV_NAME.value, config=env_cfg, config_overrides={"impl": "jax"}
   )
+  print("I am here 2")
+  
+  # Diagnose memory usage before batching
+  print("\n" + "="*80)
+  print("MEMORY DIAGNOSTICS - BEFORE BATCHING")
+  print("="*80)
+  test_rng = jax.random.PRNGKey(0)
+  test_state = raw_env.reset(test_rng)
+  memory_utils.print_memory_report(test_state.data, num_envs=num_envs)
+  
+  suggestions = memory_utils.suggest_optimizations(test_state.data, num_envs)
+  if suggestions:
+    print("\nOPTIMIZATION SUGGESTIONS:")
+    for i, suggestion in enumerate(suggestions, 1):
+      print(f"  {i}. {suggestion}")
+  print("="*80 + "\n")
+  
   brax_env = wrapper_torch.RSLRLBraxWrapper(
       raw_env,
       num_envs,
@@ -195,6 +197,15 @@ def main(argv):
       randomization_fn=randomizer,
       device_rank=device_rank,
   )
+  print("I am here 3")
+  
+  # Diagnose memory usage after batching
+  print("\n" + "="*80)
+  print("MEMORY DIAGNOSTICS - AFTER BATCHING")
+  print("="*80)
+  if brax_env.env_state is not None:
+    memory_utils.print_memory_report(brax_env.env_state.data, num_envs=1)
+  print("="*80 + "\n")
 
   # Build RSL-RL config
   train_cfg = get_rl_config(_ENV_NAME.value)
@@ -214,7 +225,7 @@ def main(argv):
 
   train_cfg_dict = train_cfg.to_dict()
   runner = OnPolicyRunner(brax_env, train_cfg_dict, logdir, device=device)
-
+  print("I am here 4")
   # If resume, load from checkpoint
   if train_cfg.resume:
     resume_path = wrapper_torch.get_load_path(
@@ -224,6 +235,7 @@ def main(argv):
     )
     print(f"Loading model from checkpoint: {resume_path}")
     runner.load(resume_path)
+    print("I am here 5")
 
   if not _PLAY_ONLY.value:
     # Perform training
@@ -232,6 +244,7 @@ def main(argv):
         init_at_random_ep_len=False,
     )
     print("Done training.")
+    print("I am here 6")
     return
 
   # If just playing (no training)
@@ -239,68 +252,57 @@ def main(argv):
 
   # Example: run a single rollout
   eval_env = registry.load(
-      _ENV_NAME.value, config=env_cfg, config_overrides=env_cfg_overrides
+      _ENV_NAME.value, config=env_cfg, config_overrides={"impl": "jax"}
+      
   )
   jit_reset = jax.jit(eval_env.reset)
   jit_step = jax.jit(eval_env.step)
 
   rng = jax.random.PRNGKey(_SEED.value)
-  num_episodes = 10  # Change this to run more/fewer episodes.
+  state = jit_reset(rng)
+  rollout = [state]
 
   # We’ll assume your environment’s observation is in state.obs["state"].
   is_dict_obs = isinstance(eval_env.observation_size, dict)
+  obs = state.obs["state"] if is_dict_obs else state.obs
+  obs_torch = wrapper_torch._jax_to_torch(obs)
 
-  # Set up rendering configuration once.
+  for _ in range(env_cfg.episode_length):
+    with torch.no_grad():
+      actions = policy({"state": obs_torch})
+      actions = torch.clip(actions, -1.0, 1.0)  # from wrapper_torch.py
+    # Step environment
+    state = jit_step(state, wrapper_torch._torch_to_jax(actions.flatten()))
+    rollout.append(state)
+    obs = state.obs["state"] if is_dict_obs else state.obs
+    obs_torch = wrapper_torch._jax_to_torch(obs)
+    if state.done:
+      break
+
+  reward_sum = sum(s.reward for s in rollout)
+  print(f"Rollout reward: {reward_sum}")
+
+  # Render
   scene_option = mujoco.MjvOption()
   scene_option.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = True
   scene_option.flags[mujoco.mjtVisFlag.mjVIS_PERTFORCE] = True
   scene_option.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = False
 
   render_every = 2
-  base_env = eval_env  # If wrapped multiple times, adjust as needed.
+  # If your environment is wrapped multiple times, adjust as needed:
+  base_env = eval_env  # or brax_env.env.env.env
   fps = 1.0 / base_env.dt / render_every
-
-  for ep in range(num_episodes):
-    rng, rng_reset = jax.random.split(rng)
-    state = jit_reset(rng_reset)
-    rollout = [state]
-
-    obs = state.obs["state"] if is_dict_obs else state.obs
-    obs_torch = wrapper_torch._jax_to_torch(obs)
-
-    for _ in range(env_cfg.episode_length):
-      with torch.no_grad():
-        actions = policy({"state": obs_torch})
-        actions = torch.clip(actions, -1.0, 1.0)  # from wrapper_torch.py
-      # Step environment
-      state = jit_step(state, wrapper_torch._torch_to_jax(actions.flatten()))
-      rollout.append(state)
-      obs = state.obs["state"] if is_dict_obs else state.obs
-      obs_torch = wrapper_torch._jax_to_torch(obs)
-      if state.done:
-        break
-
-    reward_sum = sum(s.reward for s in rollout)
-    print(f"Episode {ep} reward: {reward_sum}")
-
-    # Render this episode to its own video file.
-    traj = rollout[::render_every]
-    frames = eval_env.render(
-        traj,
-        camera=_CAMERA.value,
-        height=480,
-        width=640,
-        scene_option=scene_option,
-    )
-    video_name = f"rollout_ep{ep}.mp4"
-    media.write_video(video_name, frames, fps=fps)
-    print(f"Rollout video for episode {ep} saved as '{video_name}'.")
-
-
-def run():
-  """Entry point for uv/pip script."""
-  app.run(main)
+  traj = rollout[::render_every]
+  frames = eval_env.render(
+      traj,
+      camera=_CAMERA.value,
+      height=480,
+      width=640,
+      scene_option=scene_option,
+  )
+  media.write_video("rollout.mp4", frames, fps=fps)
+  print("Rollout video saved as 'rollout.mp4'.")
 
 
 if __name__ == "__main__":
-  run()
+  app.run(main)

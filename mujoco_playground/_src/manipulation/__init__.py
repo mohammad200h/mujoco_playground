@@ -27,6 +27,7 @@ from mujoco_playground._src.manipulation.franka_emika_panda import pick as panda
 from mujoco_playground._src.manipulation.franka_emika_panda import pick_cartesian as panda_pick_cartesian
 from mujoco_playground._src.manipulation.franka_emika_panda_robotiq import push_cube as robotiq_push_cube
 from mujoco_playground._src.manipulation.leap_hand import reorient as leap_cube_reorient
+from mujoco_playground._src.manipulation.leapXELA import reorient as leap_xela_cube_reorient
 from mujoco_playground._src.manipulation.leap_hand import rotate_z as leap_rotate_z
 from mujoco_playground._src.manipulation.aero_hand import rotate_z as aero_hand_rotate_z
 
@@ -39,6 +40,7 @@ _envs = {
     "PandaOpenCabinet": panda_open_cabinet.PandaOpenCabinet,
     "PandaRobotiqPushCube": robotiq_push_cube.PandaRobotiqPushCube,
     "LeapCubeReorient": leap_cube_reorient.CubeReorient,
+    "LeapXELACubeReorient": leap_xela_cube_reorient.CubeReorient,
     "LeapCubeRotateZAxis": leap_rotate_z.CubeRotateZAxis,
     "AeroCubeRotateZAxis": aero_hand_rotate_z.CubeRotateZAxis,
 }
@@ -52,6 +54,7 @@ _cfgs = {
     "PandaOpenCabinet": panda_open_cabinet.default_config,
     "PandaRobotiqPushCube": robotiq_push_cube.default_config,
     "LeapCubeReorient": leap_cube_reorient.default_config,
+    "LeapXELACubeReorient": leap_xela_cube_reorient.default_config,
     "LeapCubeRotateZAxis": leap_rotate_z.default_config,
     "AeroCubeRotateZAxis": aero_hand_rotate_z.default_config,
 }
@@ -59,6 +62,7 @@ _cfgs = {
 _randomizer = {
     "LeapCubeRotateZAxis": leap_rotate_z.domain_randomize,
     "LeapCubeReorient": leap_cube_reorient.domain_randomize,
+    "LeapXELACubeReorient": leap_xela_cube_reorient.domain_randomize,
     "AeroCubeRotateZAxis": aero_hand_rotate_z.domain_randomize,
 }
 
