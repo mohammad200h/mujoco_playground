@@ -1,0 +1,236 @@
+Warp 1.11.0 initialized:
+   CUDA Toolkit 12.9, Driver 13.1
+   Devices:
+     "cpu"      : "x86_64"
+     "cuda:0"   : "NVIDIA GeForce RTX 4090" (23 GiB, sm_89, mempool enabled)
+     "cuda:1"   : "NVIDIA GeForce RTX 4090" (24 GiB, sm_89, mempool enabled)
+   CUDA peer access:
+     Not supported
+   Kernel cache:
+     /tmp/wp_kernel_cache_playground
+Warp DeprecationWarning: The symbol `warp.context.runtime` will soon be removed from the public API. It can still be accessed from `warp._src.context.runtime` but might be changed or removed without notice.
+Warp DeprecationWarning: The symbol `warp.types.warp_type_to_np_dtype` will soon be removed from the public API. It can still be accessed from `warp._src.types.warp_type_to_np_dtype` but might be changed or removed without notice.
+Warp DeprecationWarning: The symbol `warp.types.array` will soon be removed from the public API. Use `warp.array` instead.
+Device -- cuda:0
+Key device -- {CudaDevice(id=0)}
+Module mujoco.mjx.third_party.mujoco_warp._src.smooth 61a2af8 load on device 'cuda:0' took 7.76 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.collision_driver de6dc98 load on device 'cuda:0' took 0.33 ms  (cached)
+Module _nxn_broadphase__locals__kernel_8c837afb 8c837af load on device 'cuda:0' took 0.38 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.collision_primitive._create_narrowphase_kernel 0b4b8fe load on device 'cuda:0' took 0.92 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.constraint 8bed7e5 load on device 'cuda:0' took 1.63 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.sensor 6cdd01a load on device 'cuda:0' took 2.55 ms  (cached)
+Module _actuator_velocity__locals__actuator_velocity_9dd7b372 68d7635 load on device 'cuda:0' took 0.48 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.passive 4b87636 load on device 'cuda:0' took 0.78 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.forward 3875c24 load on device 'cuda:0' took 0.80 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.support b7a7a89 load on device 'cuda:0' took 0.37 ms  (cached)
+Module _tile_cholesky_factorize_solve__locals__cholesky_factorize_solve_e3761996 fd4b089 load on device 'cuda:0' took 35.01 ms  (cached)
+Module _tile_cholesky_factorize_solve__locals__cholesky_factorize_solve_75721b92 b743607 load on device 'cuda:0' took 28.40 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.solver f8d7d7e load on device 'cuda:0' took 1.31 ms  (cached)
+Module mul_m_dense__locals___mul_m_dense_fe97ca0f cca8979 load on device 'cuda:0' took 42.03 ms  (cached)
+Module mul_m_dense__locals___mul_m_dense_803d80a2 fbc904a load on device 'cuda:0' took 43.65 ms  (cached)
+Module update_constraint_gauss_cost__locals__kernel_84375af0 84375af load on device 'cuda:0' took 0.53 ms  (cached)
+Module update_gradient_JTDAJ_dense_tiled__locals__kernel_c0ce8591 6b53dd7 load on device 'cuda:0' took 56.61 ms  (cached)
+Module update_gradient_cholesky__locals__kernel_e0f44224 8b02f1e load on device 'cuda:0' took 30.58 ms  (cached)
+Module linesearch_jv_fused__locals__kernel_6f95e740 6f95e74 load on device 'cuda:0' took 0.38 ms  (cached)
+obs_shape: {'privileged_state': (105,), 'state': (32,)}
+Asymmetric observation space
+JITing reset and step
+Done JITing reset and step
+wrapper_torch.py: reset::1
+wrapper_torch.py: reset::2
+--------------------------------------------------------------------------------
+Resolved observation sets:
+	 critic :  ['privileged_state']
+	 policy :  ['state']
+--------------------------------------------------------------------------------
+Actor MLP: MLP(
+  (0): Linear(in_features=32, out_features=512, bias=True)
+  (1): ELU(alpha=1.0)
+  (2): Linear(in_features=512, out_features=256, bias=True)
+  (3): ELU(alpha=1.0)
+  (4): Linear(in_features=256, out_features=128, bias=True)
+  (5): ELU(alpha=1.0)
+  (6): Linear(in_features=128, out_features=16, bias=True)
+)
+Critic MLP: MLP(
+  (0): Linear(in_features=105, out_features=512, bias=True)
+  (1): ELU(alpha=1.0)
+  (2): Linear(in_features=512, out_features=256, bias=True)
+  (3): ELU(alpha=1.0)
+  (4): Linear(in_features=256, out_features=128, bias=True)
+  (5): ELU(alpha=1.0)
+  (6): Linear(in_features=128, out_features=1, bias=True)
+)
+wrapper_torch.py: reset::1
+wrapper_torch.py: reset::2
+Module mujoco.mjx.warp.ffi edde159 load on device 'cuda:0' took 0.45 ms  (cached)
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2519, in _lower_jaxpr_to_fun_cached
+    func_op, _, _ = ctx.cached_primitive_lowerings[key]
+                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+KeyError: <exception str() failed>
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/dist-packages/brax/envs/wrappers/training.py", line 100, in f
+    nstate = self.env.step(state, action)
+  File "/workspace/mujoco_playground/mujoco_playground/_src/wrapper.py", line 251, in step
+    res = jax.vmap(step, in_axes=[self._in_axes, 0, 0])(
+  File "/workspace/mujoco_playground/mujoco_playground/_src/wrapper.py", line 249, in step
+    return v_env.step(s, a)
+  File "/workspace/mujoco_playground/mujoco_playground/_src/manipulation/leap_hand/rotate_z.py", line 141, in step
+    data = mjx_env.step(
+  File "/workspace/mujoco_playground/mujoco_playground/_src/mjx_env.py", line 189, in step
+    _check_nan(
+  File "/workspace/mujoco_playground/mujoco_playground/_src/mjx_env.py", line 173, in _check_nan
+    jax.debug.callback(
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/debugging.py", line 471, in debug_callback
+    debug_callback_p.bind(
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/debugging.py", line 127, in debug_batching_rule
+    args_idx = map(partial(get_arg_at_dim, i), dims, args)
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/debugging.py", line 124, in get_arg_at_dim
+    return lax.index_in_dim(arg, i, axis=dim, keepdims=False)
+jax._src.source_info_util.JaxStackTraceBeforeTransformation: KeyboardInterrupt
+
+The preceding stack trace is the source of the JAX operation that, once transformed by JAX, triggered the following exception.
+
+--------------------
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/workspace/mujoco_playground/learning/train_rsl_rl.py", line 291, in <module>
+    run()
+  File "/workspace/mujoco_playground/learning/train_rsl_rl.py", line 287, in run
+    app.run(main)
+  File "/usr/local/lib/python3.11/dist-packages/absl/app.py", line 367, in run
+    _run_main(main, args)
+  File "/usr/local/lib/python3.11/dist-packages/absl/app.py", line 312, in _run_main
+    sys.exit(main(argv))
+             ^^^^^^^^^^
+  File "/workspace/mujoco_playground/learning/train_rsl_rl.py", line 222, in main
+    runner.learn(
+  File "/usr/local/lib/python3.11/dist-packages/rsl_rl/runners/on_policy_runner.py", line 105, in learn
+    obs, rewards, dones, extras = self.env.step(actions.to(self.env.device))
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/mujoco_playground/mujoco_playground/_src/wrapper_torch.py", line 164, in step
+    self.env_state = self.step_fn(self.env_state, action)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/traceback_util.py", line 198, in reraise_with_filtered_traceback
+    return fun(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/pjit.py", line 256, in cache_miss
+    executable, pgle_profiler, const_args) = _run_python_pjit(
+                                             ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/pjit.py", line 141, in _run_python_pjit
+    out_flat, compiled, profiler, const_args = _pjit_call_impl_python(
+                                               ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/pjit.py", line 1207, in _pjit_call_impl_python
+    computation = _resolve_and_lower(
+                  ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/pjit.py", line 1133, in _resolve_and_lower
+    return _pjit_lower(
+           ^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/pjit.py", line 1313, in _pjit_lower
+    return pxla.lower_sharding_computation(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/profiler.py", line 384, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/pxla.py", line 2395, in lower_sharding_computation
+    nreps, tuple_args, shape_poly_state) = _cached_lowering_to_hlo(
+                                           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/pxla.py", line 1989, in _cached_lowering_to_hlo
+    lowering_result = mlir.lower_jaxpr_to_module(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 1314, in lower_jaxpr_to_module
+    lower_jaxpr_to_fun(
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 1894, in lower_jaxpr_to_fun
+    out_vals, tokens_out = jaxpr_subcomp(
+                           ^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2082, in jaxpr_subcomp
+    out_nodes, tokens_out = _cached_lowering(
+                            ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2146, in _cached_lowering
+    cache_entry = _emit_lowering_rule_as_fun(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2228, in _emit_lowering_rule_as_fun
+    outs, inline = lowering_rule(sub_ctx, *unflattened_args, **params)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2279, in _uncached_lowering
+    ans = lower_per_platform(ctx, str(primitive), platform_rules, default_rule,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2397, in lower_per_platform
+    output = kept_rules[0](ctx, *rule_args, **rule_kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2498, in f_lowered
+    out, tokens = jaxpr_subcomp(
+                  ^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2082, in jaxpr_subcomp
+    out_nodes, tokens_out = _cached_lowering(
+                            ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2146, in _cached_lowering
+    cache_entry = _emit_lowering_rule_as_fun(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2228, in _emit_lowering_rule_as_fun
+    outs, inline = lowering_rule(sub_ctx, *unflattened_args, **params)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2279, in _uncached_lowering
+    ans = lower_per_platform(ctx, str(primitive), platform_rules, default_rule,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2397, in lower_per_platform
+    output = kept_rules[0](ctx, *rule_args, **rule_kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/lax/control_flow/loops.py", line 2032, in _while_lowering
+    new_z, tokens_out = mlir.jaxpr_subcomp(
+                        ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2099, in jaxpr_subcomp
+    out_nodes, _inline = _uncached_lowering(
+                         ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2279, in _uncached_lowering
+    ans = lower_per_platform(ctx, str(primitive), platform_rules, default_rule,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2397, in lower_per_platform
+    output = kept_rules[0](ctx, *rule_args, **rule_kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2609, in core_call_lowering
+    out_nodes, tokens = call_lowering(
+                        ^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2586, in call_lowering
+    func_op, output_types, effects = lower_called_computation(
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2563, in lower_called_computation
+    func_op = _lower_jaxpr_to_fun_cached(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2521, in _lower_jaxpr_to_fun_cached
+    func_op = lower_jaxpr_to_fun(
+              ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 1894, in lower_jaxpr_to_fun
+    out_vals, tokens_out = jaxpr_subcomp(
+                           ^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2082, in jaxpr_subcomp
+    out_nodes, tokens_out = _cached_lowering(
+                            ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2146, in _cached_lowering
+    cache_entry = _emit_lowering_rule_as_fun(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2228, in _emit_lowering_rule_as_fun
+    outs, inline = lowering_rule(sub_ctx, *unflattened_args, **params)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2279, in _uncached_lowering
+    ans = lower_per_platform(ctx, str(primitive), platform_rules, default_rule,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2397, in lower_per_platform
+    output = kept_rules[0](ctx, *rule_args, **rule_kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/lax/slicing.py", line 1497, in _slice_lower
+    out = mlir.slice_op(ctx, x, aval_out, start_indices=start_indices,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2746, in slice_op
+    if any(not core.is_constant_shape(s) for s in (start_indices, limit_indices, strides)):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/mlir.py", line 2746, in <genexpr>
+    if any(not core.is_constant_shape(s) for s in (start_indices, limit_indices, strides)):
+
+KeyboardInterrupt

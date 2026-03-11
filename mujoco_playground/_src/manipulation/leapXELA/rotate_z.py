@@ -26,6 +26,7 @@ from mujoco_playground._src import mjx_env
 from mujoco_playground._src.manipulation.leapXELA import base as leap_hand_base
 from mujoco_playground._src.manipulation.leapXELA import leap_hand_constants as consts
 
+from mujoco_playground._src.manipulation.leapXELA.base import get_scene_xml
 
 def default_config() -> config_dict.ConfigDict:
   return config_dict.create(
@@ -36,6 +37,7 @@ def default_config() -> config_dict.ConfigDict:
       episode_length=500,
       early_termination=True,
       history_len=1,
+      device_rank=None,
       noise_config=config_dict.create(
           level=1.0,
           scales=config_dict.create(
@@ -55,7 +57,8 @@ def default_config() -> config_dict.ConfigDict:
       ),
       impl='jax',
       nconmax=30 * 8192,
-      njmax=128,
+      njmax=170,
+      finger_tip_type='Box'
   )
 
 
@@ -67,8 +70,10 @@ class CubeRotateZAxis(leap_hand_base.LeapHandEnv):
       config: config_dict.ConfigDict = default_config(),
       config_overrides: Optional[Dict[str, Union[str, int, list[Any]]]] = None,
   ):
+    xml_path = get_scene_xml(config)
+    print(f"scene_xml:: {xml_path}")
     super().__init__(
-        xml_path=consts.CUBE_XML.as_posix(),
+        xml_path=xml_path,
         config=config,
         config_overrides=config_overrides,
     )

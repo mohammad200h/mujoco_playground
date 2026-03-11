@@ -26,20 +26,16 @@ RUN apt-get install -y python3-pip curl
 # Set python3.11 as the default python3
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
 RUN update-alternatives --set python3 /usr/bin/python3.11
-
-
-#####Installing terminator ######
-RUN apt-get update
-RUN  apt-get install -y terminator
-RUN mkdir /etc/xdg/terminator/
-
+### PIP pakcages ######
+RUN pip install python-dotenv
 ###### WorkDir #######
 WORKDIR /workspace
 ###### 
 COPY . /workspace/mujoco_playground
 RUN cd /workspace/mujoco_playground && pip3 install -e ".[all,cuda]"
 # RUN cd /workspace/mujoco_playground && pip3 install -r docker/requirements.txt
-
+#####Installing terminator ######
+RUN apt update && apt-get install -y terminator
 
 ###### Shell #######
 CMD ["/bin/bash"]

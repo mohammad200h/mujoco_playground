@@ -1,0 +1,54 @@
+scene_xml:: /workspace/mujoco_playground/mujoco_playground/_src/manipulation/leapXELA/leapXELA_model/scene_mjx_cube_Box_mjx.xml
+E0310 16:55:15.598420 127383226654720 xla_bridge.py:499] Jax plugin configuration error: Exception when calling jax_plugins.xla_cuda12.initialize()
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/xla_bridge.py", line 497, in discover_pjrt_plugins
+    plugin_module.initialize()
+  File "/usr/local/lib/python3.11/dist-packages/jax_plugins/xla_cuda12/__init__.py", line 348, in initialize
+    _check_cuda_versions(raise_on_first_error=True)
+  File "/usr/local/lib/python3.11/dist-packages/jax_plugins/xla_cuda12/__init__.py", line 274, in _check_cuda_versions
+    for d in range(cuda_versions.cuda_device_count())
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: jaxlib/cuda/versions_helpers.cc:126: operation cuInit(0) failed: CUDA_ERROR_NO_DEVICE
+W0310 16:55:15.604793 127383226654720 xla_bridge.py:883] An NVIDIA GPU may be present on this machine, but a CUDA-enabled jaxlib is not installed. Falling back to cpu.
+Traceback (most recent call last):
+  File "/workspace/mujoco_playground/learning/train_rsl_rl.py", line 297, in <module>
+    run()
+  File "/workspace/mujoco_playground/learning/train_rsl_rl.py", line 293, in run
+    app.run(main)
+  File "/usr/local/lib/python3.11/dist-packages/absl/app.py", line 367, in run
+    _run_main(main, args)
+  File "/usr/local/lib/python3.11/dist-packages/absl/app.py", line 312, in _run_main
+    sys.exit(main(argv))
+             ^^^^^^^^^^
+  File "/workspace/mujoco_playground/learning/train_rsl_rl.py", line 183, in main
+    raw_env = registry.load(
+              ^^^^^^^^^^^^^^
+  File "/workspace/mujoco_playground/mujoco_playground/_src/registry.py", line 55, in load
+    return manipulation.load(env_name, config, config_overrides)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/mujoco_playground/mujoco_playground/_src/manipulation/__init__.py", line 128, in load
+    return _envs[env_name](config=config, config_overrides=config_overrides)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/mujoco_playground/mujoco_playground/_src/manipulation/leapXELA/rotate_z.py", line 74, in __init__
+    super().__init__(
+  File "/workspace/mujoco_playground/mujoco_playground/_src/manipulation/leapXELA/base.py", line 67, in __init__
+    self._mjx_model = mjx.put_model(self._mj_model, impl=self._config.impl)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/mujoco/mjx/_src/io.py", line 511, in put_model
+    impl, device = _resolve_impl_and_device(impl, device)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/mujoco/mjx/_src/io.py", line 148, in _resolve_impl_and_device
+    device = _resolve_device(impl)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/mujoco/mjx/_src/io.py", line 92, in _resolve_device
+    cuda_gpus = [d for d in jax.devices('cuda')]
+                            ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/xla_bridge.py", line 1029, in devices
+    return get_backend(backend).devices()
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/xla_bridge.py", line 963, in get_backend
+    return _get_backend_uncached(platform)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/xla_bridge.py", line 951, in _get_backend_uncached
+    raise RuntimeError(
+RuntimeError: Unknown backend cuda. Available backends are ['cpu']

@@ -100,58 +100,73 @@ class RSLRLBraxWrapper(VecEnv):
 
     self.key = jax.random.PRNGKey(self.seed)
 
+    target_device = None
     if device_rank is not None:
       gpu_devices = jax.devices("gpu")
-      self.key = jax.device_put(self.key, gpu_devices[device_rank])
+      target_device = gpu_devices[device_rank]
+      self.key = jax.device_put(self.key, target_device)
       self.device = f"cuda:{device_rank}"
-      print(f"Device -- {gpu_devices[device_rank]}")
+      print(f"Device -- {target_device}")
       print(f"Key device -- {self.key.devices()}")
-
-    # split key into two for reset and randomization
-    key_reset, key_randomization = jax.random.split(self.key)
-
-    self.key_reset = jax.random.split(key_reset, self.batch_size)
-
-    if randomization_fn is not None:
-      randomization_rng = jax.random.split(key_randomization, self.batch_size)
-      v_randomization_fn = functools.partial(
-          randomization_fn, rng=randomization_rng
+      # Put the env's MJX model on the target device so domain randomization
+      # (which uses RNG on this device) receives model on the same device.
+      env_unwrapped = env.unwrapped if hasattr(env, "unwrapped") else env
+      env_unwrapped._mjx_model = jax.device_put(
+          env_unwrapped._mjx_model, target_device
       )
+
+    def _init_env_and_jit():
+      # split key into two for reset and randomization
+      key_reset, key_randomization = jax.random.split(self.key)
+
+      self.key_reset = jax.random.split(key_reset, self.batch_size)
+
+      if randomization_fn is not None:
+        randomization_rng = jax.random.split(key_randomization, self.batch_size)
+        v_randomization_fn = functools.partial(
+            randomization_fn, rng=randomization_rng
+        )
+      else:
+        v_randomization_fn = None
+
+      self.env = wrapper.wrap_for_brax_training(
+          env,
+          episode_length=episode_length,
+          action_repeat=action_repeat,
+          randomization_fn=v_randomization_fn,
+      )
+
+      self.render_callback = render_callback
+
+      self.asymmetric_obs = False
+      obs_shape = self.env.env.unwrapped.observation_size
+      print(f"obs_shape: {obs_shape}")
+
+      if isinstance(obs_shape, dict):
+        print("Asymmetric observation space")
+        self.asymmetric_obs = True
+        self.num_obs = obs_shape["state"]
+        self.num_privileged_obs = obs_shape["privileged_state"]
+      else:
+        self.num_obs = obs_shape
+        self.num_privileged_obs = None
+
+      self.num_actions = self.env.env.unwrapped.action_size
+
+      self.max_episode_length = episode_length
+
+      # todo -- specific to leap environment
+      self.success_queue = deque(maxlen=100)
+
+      print("JITing reset and step")
+      self.reset_fn = jax.jit(self.env.reset)
+      self.step_fn = jax.jit(self.env.step)
+
+    if target_device is not None:
+      with jax.default_device(target_device):
+        _init_env_and_jit()
     else:
-      v_randomization_fn = None
-
-    self.env = wrapper.wrap_for_brax_training(
-        env,
-        episode_length=episode_length,
-        action_repeat=action_repeat,
-        randomization_fn=v_randomization_fn,
-    )
-
-    self.render_callback = render_callback
-
-    self.asymmetric_obs = False
-    obs_shape = self.env.env.unwrapped.observation_size
-    print(f"obs_shape: {obs_shape}")
-
-    if isinstance(obs_shape, dict):
-      print("Asymmetric observation space")
-      self.asymmetric_obs = True
-      self.num_obs = obs_shape["state"]
-      self.num_privileged_obs = obs_shape["privileged_state"]
-    else:
-      self.num_obs = obs_shape
-      self.num_privileged_obs = None
-
-    self.num_actions = self.env.env.unwrapped.action_size
-
-    self.max_episode_length = episode_length
-
-    # todo -- specific to leap environment
-    self.success_queue = deque(maxlen=100)
-
-    print("JITing reset and step")
-    self.reset_fn = jax.jit(self.env.reset)
-    self.step_fn = jax.jit(self.env.step)
+      _init_env_and_jit()
     print("Done JITing reset and step")
     self.env_state = None
 

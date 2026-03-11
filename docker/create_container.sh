@@ -1,5 +1,6 @@
 sudo xhost +local:root
 
+
 sudo docker run --runtime=nvidia -it --name mujocoplayground \
   -v $(pwd)/../../mujoco_playground:/workspace/mujoco_playground \
   -e DISPLAY -e LOCAL_USER_ID=$(id -u) -e LOCAL_GID=$(id -g) \

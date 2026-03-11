@@ -1,0 +1,57 @@
+scene_xml:: /workspace/mujoco_playground/mujoco_playground/_src/manipulation/leapXELA/leapXELA_model/scene_mjx_cube_Box_mjx.xml
+Warp 1.11.0 initialized:
+   CUDA Toolkit 12.9, Driver 13.1
+   Devices:
+     "cpu"      : "x86_64"
+     "cuda:0"   : "NVIDIA GeForce RTX 4090" (23 GiB, sm_89, mempool enabled)
+     "cuda:1"   : "NVIDIA GeForce RTX 4090" (24 GiB, sm_89, mempool enabled)
+   CUDA peer access:
+     Not supported
+   Kernel cache:
+     /tmp/wp_kernel_cache_playground
+Warp DeprecationWarning: The symbol `warp.context.runtime` will soon be removed from the public API. It can still be accessed from `warp._src.context.runtime` but might be changed or removed without notice.
+Warp DeprecationWarning: The symbol `warp.types.warp_type_to_np_dtype` will soon be removed from the public API. It can still be accessed from `warp._src.types.warp_type_to_np_dtype` but might be changed or removed without notice.
+Warp DeprecationWarning: The symbol `warp.types.array` will soon be removed from the public API. Use `warp.array` instead.
+Device -- cuda:1
+Key device -- {CudaDevice(id=1)}
+scene_xml:: /workspace/mujoco_playground/mujoco_playground/_src/manipulation/leapXELA/leapXELA_model/scene_mjx_cube_Box_mjx.xml
+Traceback (most recent call last):
+  File "/workspace/mujoco_playground/learning/train_rsl_rl.py", line 297, in <module>
+    run()
+  File "/workspace/mujoco_playground/learning/train_rsl_rl.py", line 293, in run
+    app.run(main)
+  File "/usr/local/lib/python3.11/dist-packages/absl/app.py", line 367, in run
+    _run_main(main, args)
+  File "/usr/local/lib/python3.11/dist-packages/absl/app.py", line 312, in _run_main
+    sys.exit(main(argv))
+             ^^^^^^^^^^
+  File "/workspace/mujoco_playground/learning/train_rsl_rl.py", line 186, in main
+    brax_env = wrapper_torch.RSLRLBraxWrapper(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/mujoco_playground/mujoco_playground/_src/wrapper_torch.py", line 123, in __init__
+    self.env = wrapper.wrap_for_brax_training(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/mujoco_playground/mujoco_playground/_src/wrapper.py", line 123, in wrap_for_brax_training
+    env = BraxDomainRandomizationVmapWrapper(env, randomization_fn)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/mujoco_playground/mujoco_playground/_src/wrapper.py", line 226, in __init__
+    self._mjx_model_v, self._in_axes = randomization_fn(self.mjx_model)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/mujoco_playground/mujoco_playground/_src/manipulation/leapXELA/rotate_z.py", line 393, in domain_randomize
+    ) = rand(rng)
+        ^^^^^^^^^
+  File "/workspace/mujoco_playground/mujoco_playground/_src/manipulation/leapXELA/rotate_z.py", line 307, in rand
+    geom_friction = model.geom_friction.at[fingertip_geom_ids, 0].set(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/numpy/array_methods.py", line 860, in set
+    return scatter._scatter_update(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/ops/scatter.py", line 88, in _scatter_update
+    return internal_scatter(x, y, tuple(dynamic_idx))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/ops/scatter.py", line 141, in _scatter_impl
+    out = scatter_op(
+          ^^^^^^^^^^^
+ValueError: Received incompatible devices for jitted computation. Got argument args[0] of scatter with shape float32[4096,71,3] and device ids [0] on platform GPU and argument args[2] of scatter with shape float32[4096,4] and device ids [1] on platform GPU
+--------------------
+For simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these.

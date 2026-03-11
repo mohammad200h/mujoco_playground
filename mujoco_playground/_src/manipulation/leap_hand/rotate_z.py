@@ -26,6 +26,8 @@ from mujoco_playground._src import mjx_env
 from mujoco_playground._src.manipulation.leap_hand import base as leap_hand_base
 from mujoco_playground._src.manipulation.leap_hand import leap_hand_constants as consts
 
+finger_tip_types = ["CoACD","Box"]
+
 
 def default_config() -> config_dict.ConfigDict:
   return config_dict.create(
@@ -56,6 +58,7 @@ def default_config() -> config_dict.ConfigDict:
       impl='jax',
       nconmax=30 * 8192,
       njmax=160,
+      finger_tip_type='Box'
   )
 
 
