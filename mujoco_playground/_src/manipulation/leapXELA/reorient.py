@@ -84,6 +84,10 @@ class CubeReorient(leap_hand_base.LeapHandEnv):
       config: config_dict.ConfigDict = default_config(),
       config_overrides: Optional[Dict[str, Union[str, int, list[Any]]]] = None,
   ):
+    # Apply overrides (e.g. `finger_tip_type`) before selecting the XML so
+    # that the correct scene file is loaded.
+    if config_overrides:
+      config.update_from_flattened_dict(config_overrides)
     xml_path = get_scene_xml(config)
     print(f"scene_xml:: {xml_path}")
     super().__init__(

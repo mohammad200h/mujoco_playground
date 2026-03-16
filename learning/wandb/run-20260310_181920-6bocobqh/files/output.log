@@ -1,0 +1,166 @@
+scene_xml:: /workspace/mujoco_playground/mujoco_playground/_src/manipulation/leapXELA/leapXELA_model/scene_mjx_cube_Box_mjx.xml
+Warp 1.11.0 initialized:
+   CUDA Toolkit 12.9, Driver 13.1
+   Devices:
+     "cpu"      : "x86_64"
+     "cuda:0"   : "NVIDIA GeForce RTX 4090" (23 GiB, sm_89, mempool enabled)
+     "cuda:1"   : "NVIDIA GeForce RTX 4090" (24 GiB, sm_89, mempool enabled)
+   CUDA peer access:
+     Not supported
+   Kernel cache:
+     /tmp/wp_kernel_cache_playground
+Warp DeprecationWarning: The symbol `warp.context.runtime` will soon be removed from the public API. It can still be accessed from `warp._src.context.runtime` but might be changed or removed without notice.
+Warp DeprecationWarning: The symbol `warp.types.warp_type_to_np_dtype` will soon be removed from the public API. It can still be accessed from `warp._src.types.warp_type_to_np_dtype` but might be changed or removed without notice.
+Warp DeprecationWarning: The symbol `warp.types.array` will soon be removed from the public API. Use `warp.array` instead.
+Device -- cuda:1
+Key device -- {CudaDevice(id=1)}
+scene_xml:: /workspace/mujoco_playground/mujoco_playground/_src/manipulation/leapXELA/leapXELA_model/scene_mjx_cube_Box_mjx.xml
+Module mujoco.mjx.third_party.mujoco_warp._src.smooth 61a2af8 load on device 'cuda:0' took 10.40 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.collision_driver de6dc98 load on device 'cuda:0' took 0.48 ms  (cached)
+Module _nxn_broadphase__locals__kernel_8c837afb 8c837af load on device 'cuda:0' took 0.42 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.collision_primitive._create_narrowphase_kernel 0b4b8fe load on device 'cuda:0' took 0.92 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.constraint 8bed7e5 load on device 'cuda:0' took 1.58 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.sensor 6cdd01a load on device 'cuda:0' took 1.88 ms  (cached)
+Module _actuator_velocity__locals__actuator_velocity_9dd7b372 68d7635 load on device 'cuda:0' took 0.38 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.passive 4b87636 load on device 'cuda:0' took 0.67 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.forward 3875c24 load on device 'cuda:0' took 0.79 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.support b7a7a89 load on device 'cuda:0' took 0.36 ms  (cached)
+Module _tile_cholesky_factorize_solve__locals__cholesky_factorize_solve_e3761996 fd4b089 load on device 'cuda:0' took 24.13 ms  (cached)
+Module _tile_cholesky_factorize_solve__locals__cholesky_factorize_solve_75721b92 b743607 load on device 'cuda:0' took 28.18 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.solver f8d7d7e load on device 'cuda:0' took 1.30 ms  (cached)
+Module mul_m_dense__locals___mul_m_dense_fe97ca0f cca8979 load on device 'cuda:0' took 42.16 ms  (cached)
+Module mul_m_dense__locals___mul_m_dense_803d80a2 fbc904a load on device 'cuda:0' took 44.85 ms  (cached)
+Module update_constraint_gauss_cost__locals__kernel_84375af0 84375af load on device 'cuda:0' took 0.39 ms  (cached)
+Module update_gradient_JTDAJ_dense_tiled__locals__kernel_acc0fe50 52ed299 load on device 'cuda:0' took 55.80 ms  (cached)
+Module update_gradient_cholesky__locals__kernel_e0f44224 8b02f1e load on device 'cuda:0' took 29.53 ms  (cached)
+Module linesearch_jv_fused__locals__kernel_6f95e740 6f95e74 load on device 'cuda:0' took 0.39 ms  (cached)
+obs_shape: {'privileged_state': (105,), 'state': (32,)}
+Asymmetric observation space
+JITing reset and step
+Done JITing reset and step
+wrapper_torch.py: reset::1
+wrapper_torch.py: reset::2
+--------------------------------------------------------------------------------
+Resolved observation sets:
+	 critic :  ['privileged_state']
+	 policy :  ['state']
+--------------------------------------------------------------------------------
+Actor MLP: MLP(
+  (0): Linear(in_features=32, out_features=512, bias=True)
+  (1): ELU(alpha=1.0)
+  (2): Linear(in_features=512, out_features=256, bias=True)
+  (3): ELU(alpha=1.0)
+  (4): Linear(in_features=256, out_features=128, bias=True)
+  (5): ELU(alpha=1.0)
+  (6): Linear(in_features=128, out_features=16, bias=True)
+)
+Critic MLP: MLP(
+  (0): Linear(in_features=105, out_features=512, bias=True)
+  (1): ELU(alpha=1.0)
+  (2): Linear(in_features=512, out_features=256, bias=True)
+  (3): ELU(alpha=1.0)
+  (4): Linear(in_features=256, out_features=128, bias=True)
+  (5): ELU(alpha=1.0)
+  (6): Linear(in_features=128, out_features=1, bias=True)
+)
+wrapper_torch.py: reset::1
+wrapper_torch.py: reset::2
+Module mujoco.mjx.warp.ffi edde159 load on device 'cuda:0' took 0.43 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.smooth 61a2af8 load on device 'cuda:1' took 2.22 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.collision_driver de6dc98 load on device 'cuda:1' took 0.35 ms  (cached)
+Module _nxn_broadphase__locals__kernel_8c837afb 8c837af load on device 'cuda:1' took 0.37 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.collision_primitive._create_narrowphase_kernel 0b4b8fe load on device 'cuda:1' took 0.81 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.constraint 8bed7e5 load on device 'cuda:1' took 1.42 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.sensor 6cdd01a load on device 'cuda:1' took 1.67 ms  (cached)
+Module _actuator_velocity__locals__actuator_velocity_9dd7b372 68d7635 load on device 'cuda:1' took 0.37 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.passive 4b87636 load on device 'cuda:1' took 0.67 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.forward 3875c24 load on device 'cuda:1' took 0.74 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.support b7a7a89 load on device 'cuda:1' took 0.52 ms  (cached)
+Module _tile_cholesky_factorize_solve__locals__cholesky_factorize_solve_e3761996 fd4b089 load on device 'cuda:1' took 27.86 ms  (cached)
+Module _tile_cholesky_factorize_solve__locals__cholesky_factorize_solve_75721b92 b743607 load on device 'cuda:1' took 27.66 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.solver f8d7d7e load on device 'cuda:1' took 1.68 ms  (cached)
+Module mul_m_dense__locals___mul_m_dense_fe97ca0f cca8979 load on device 'cuda:1' took 44.94 ms  (cached)
+Module mul_m_dense__locals___mul_m_dense_803d80a2 fbc904a load on device 'cuda:1' took 49.01 ms  (cached)
+Module update_constraint_gauss_cost__locals__kernel_84375af0 84375af load on device 'cuda:1' took 0.61 ms  (cached)
+Module update_gradient_JTDAJ_dense_tiled__locals__kernel_acc0fe50 52ed299 load on device 'cuda:1' took 62.80 ms  (cached)
+Module update_gradient_cholesky__locals__kernel_e0f44224 8b02f1e load on device 'cuda:1' took 29.23 ms  (cached)
+Module linesearch_jv_fused__locals__kernel_6f95e740 6f95e74 load on device 'cuda:1' took 0.40 ms  (cached)
+################################################################################
+                     [1m Learning iteration 0/100000 [0m
+
+                       Computation: 563 steps/s (collection: 290.248s, learning 0.271s)
+             Mean action noise std: 1.00
+          Mean value_function loss: 0.7011
+               Mean surrogate loss: 0.0084
+                 Mean entropy loss: 22.7516
+                       Mean reward: -5.29
+               Mean episode length: 15.68
+                reward/action_rate: 0.0000
+                     reward/angvel: -0.0946
+                     reward/energy: 0.0000
+                     reward/linvel: 0.0000
+                       reward/pose: 0.0000
+                reward/termination: -0.5841
+                    reward/torques: 0.0000
+--------------------------------------------------------------------------------
+                   Total timesteps: 163840
+                    Iteration time: 290.52s
+                      Time elapsed: 00:04:50
+                               ETA: 05:59:30
+
+Could not find git repository in /usr/local/lib/python3.11/dist-packages/rsl_rl/__init__.py. Skipping.
+Traceback (most recent call last):
+  File "/workspace/mujoco_playground/learning/train_rsl_rl.py", line 300, in <module>
+    run()
+  File "/workspace/mujoco_playground/learning/train_rsl_rl.py", line 296, in run
+    app.run(main)
+  File "/usr/local/lib/python3.11/dist-packages/absl/app.py", line 367, in run
+    _run_main(main, args)
+  File "/usr/local/lib/python3.11/dist-packages/absl/app.py", line 312, in _run_main
+    sys.exit(main(argv))
+             ^^^^^^^^^^
+  File "/workspace/mujoco_playground/learning/train_rsl_rl.py", line 231, in main
+    runner.learn(
+  File "/usr/local/lib/python3.11/dist-packages/rsl_rl/runners/on_policy_runner.py", line 105, in learn
+    obs, rewards, dones, extras = self.env.step(actions.to(self.env.device))
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/mujoco_playground/mujoco_playground/_src/wrapper_torch.py", line 182, in step
+    obs = _jax_to_torch(self.env_state.obs["state"])
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/mujoco_playground/mujoco_playground/_src/wrapper_torch.py", line 44, in _jax_to_torch
+    tensor = tpack.from_dlpack(tensor)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torch/utils/dlpack.py", line 186, in from_dlpack
+    dlpack = ext_tensor.__dlpack__(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/array.py", line 455, in __dlpack__
+    return to_dlpack(self, stream=stream,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/dlpack.py", line 154, in to_dlpack
+    return _to_dlpack(
+           ^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/dlpack.py", line 80, in _to_dlpack
+    return _jax.buffer_to_dlpack_managed_tensor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+jax.errors.JaxRuntimeError: INTERNAL: CpuCallback error calling callback: Traceback (most recent call last):
+  File "/workspace/mujoco_playground/learning/train_rsl_rl.py", line 300, in <module>
+  File "/workspace/mujoco_playground/learning/train_rsl_rl.py", line 296, in run
+  File "/usr/local/lib/python3.11/dist-packages/absl/app.py", line 367, in run
+  File "/usr/local/lib/python3.11/dist-packages/absl/app.py", line 312, in _run_main
+  File "/workspace/mujoco_playground/learning/train_rsl_rl.py", line 231, in main
+  File "/usr/local/lib/python3.11/dist-packages/rsl_rl/runners/on_policy_runner.py", line 105, in learn
+  File "/workspace/mujoco_playground/mujoco_playground/_src/wrapper_torch.py", line 179, in step
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/traceback_util.py", line 198, in reraise_with_filtered_traceback
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/pjit.py", line 256, in cache_miss
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/pjit.py", line 141, in _run_python_pjit
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/pjit.py", line 1239, in _pjit_call_impl_python
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/profiler.py", line 384, in wrapper
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/interpreters/pxla.py", line 1354, in __call__
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/callback.py", line 817, in _wrapped_callback
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/debugging.py", line 201, in _callback
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/debugging.py", line 97, in debug_callback_impl
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/api.py", line 2715, in device_put
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/dispatch.py", line 598, in _batched_device_put_impl
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/dispatch.py", line 578, in _device_put_impl
+  File "/usr/local/lib/python3.11/dist-packages/jax/_src/dispatch.py", line 422, in _device_put_sharding_impl
+KeyboardInterrupt:

@@ -57,7 +57,7 @@ def default_config() -> config_dict.ConfigDict:
       ),
       impl='jax',
       nconmax=30 * 8192,
-      njmax=170,
+      njmax=180,
       finger_tip_type='Box'
   )
 
@@ -70,6 +70,10 @@ class CubeRotateZAxis(leap_hand_base.LeapHandEnv):
       config: config_dict.ConfigDict = default_config(),
       config_overrides: Optional[Dict[str, Union[str, int, list[Any]]]] = None,
   ):
+    # Apply any config overrides before choosing the XML so that options like
+    # `finger_tip_type` affect which scene file is loaded.
+    if config_overrides:
+      config.update_from_flattened_dict(config_overrides)
     xml_path = get_scene_xml(config)
     print(f"scene_xml:: {xml_path}")
     super().__init__(

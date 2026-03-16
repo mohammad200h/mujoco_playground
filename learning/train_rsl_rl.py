@@ -18,33 +18,6 @@
 from datetime import datetime
 import json
 import os
-import sys
-
-# Set CUDA_VISIBLE_DEVICES before JAX/warp init so Warp loads on the target GPU.
-# Must run before jax, mujoco, or warp imports.
-if "CUDA_VISIBLE_DEVICES" not in os.environ:
-  warp_requested = False
-  for i, arg in enumerate(sys.argv):
-    if arg == "--impl" and i + 1 < len(sys.argv) and sys.argv[i + 1] == "warp":
-      warp_requested = True
-      break
-    if arg.startswith("--impl=") and arg.split("=", 1)[1] == "warp":
-      warp_requested = True
-      break
-  if warp_requested:
-    gpu_id = "0"
-    for j, arg in enumerate(sys.argv):
-      if arg.startswith("--device=cuda:"):
-        gpu_id = arg.split("cuda:")[-1]
-        break
-      if arg == "--device" and j + 1 < len(sys.argv):
-        next_arg = sys.argv[j + 1]
-        if next_arg.startswith("cuda:"):
-          gpu_id = next_arg.split(":")[-1]
-        break
-    os.environ["CUDA_VISIBLE_DEVICES"] = gpu_id
-    os.environ["MUJOCO_PLAYGROUND_WARP_SINGLE_GPU"] = gpu_id
-    print(f"Warp + cuda:{gpu_id}: Setting CUDA_VISIBLE_DEVICES={gpu_id}")
 
 from absl import app
 from absl import flags
@@ -62,6 +35,12 @@ from rsl_rl.runners import OnPolicyRunner
 import torch
 import warp as wp
 
+from jax import config
+# config.update("jax_debug_nans", True)
+
+# Enable full JAX tracebacks for better debugging
+# os.environ["JAX_TRACEBACK_FILTERING"] = "off"
+
 try:
   import wandb  # pylint: disable=g-import-not-at-top
 except ImportError:
@@ -71,7 +50,6 @@ xla_flags = os.environ.get("XLA_FLAGS", "")
 xla_flags += " --xla_gpu_triton_gemm_any=True"
 os.environ["XLA_FLAGS"] = xla_flags
 os.environ["MUJOCO_GL"] = "egl"
-
 
 # Suppress logs if you want
 logging.set_verbosity(logging.WARNING)
@@ -143,17 +121,14 @@ def main(argv):
     device_rank = local_rank
     device = f"cuda:{local_rank}"
     print(f"Using multi-GPU: local_rank={local_rank}, device={device}")
-  elif os.environ.get("MUJOCO_PLAYGROUND_WARP_SINGLE_GPU"):
-    # CUDA_VISIBLE_DEVICES was set to target GPU; JAX/warp see only cuda:0
-    device_rank = 0
-    device = "cuda:0"
-    print(f"Using warp single-GPU (physical GPU {os.environ['MUJOCO_PLAYGROUND_WARP_SINGLE_GPU']})")
   else:
     device = _DEVICE.value
     device_rank = int(device.split(":")[-1]) if "cuda" in device else 0
 
   # If play-only, use fewer envs
   num_envs = 1 if _PLAY_ONLY.value else _NUM_ENVS.value
+
+  print(f"num_envs::{num_envs}")
 
   # Load default config from registry
   env_cfg = registry.get_default_config(_ENV_NAME.value)
@@ -163,9 +138,6 @@ def main(argv):
   env_cfg_overrides = {}
   if _PLAYGROUND_CONFIG_OVERRIDES.value is not None:
     env_cfg_overrides = json.loads(_PLAYGROUND_CONFIG_OVERRIDES.value)
-  if "cuda" in device:
-    env_cfg_overrides["device_rank"] = device_rank
-  if env_cfg_overrides:
     print(f"Environment config overrides:\n{env_cfg_overrides}\n")
 
   # Generate unique experiment name
@@ -278,11 +250,25 @@ def main(argv):
   jit_step = jax.jit(eval_env.step)
 
   rng = jax.random.PRNGKey(_SEED.value)
-  state = jit_reset(rng)
-  rollout = [state]
+  num_episodes = 10  # Change this to run more/fewer episodes.
 
   # We’ll assume your environment’s observation is in state.obs["state"].
   is_dict_obs = isinstance(eval_env.observation_size, dict)
+
+  # Set up rendering configuration once.
+  scene_option = mujoco.MjvOption()
+  scene_option.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = True
+  scene_option.flags[mujoco.mjtVisFlag.mjVIS_PERTFORCE] = True
+  scene_option.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = False
+
+  render_every = 2
+  base_env = eval_env  # If wrapped multiple times, adjust as needed.
+  fps = 1.0 / base_env.dt / render_every
+
+
+  rng, rng_reset = jax.random.split(rng)
+  state = jit_reset(rng_reset)
+  rollout = [state]
   obs = state.obs["state"] if is_dict_obs else state.obs
   obs_torch = wrapper_torch._jax_to_torch(obs)
 
@@ -299,18 +285,9 @@ def main(argv):
       break
 
   reward_sum = sum(s.reward for s in rollout)
-  print(f"Rollout reward: {reward_sum}")
+  print(f"Episode reward: {reward_sum}")
 
-  # Render
-  scene_option = mujoco.MjvOption()
-  scene_option.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = True
-  scene_option.flags[mujoco.mjtVisFlag.mjVIS_PERTFORCE] = True
-  scene_option.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = False
-
-  render_every = 2
-  # If your environment is wrapped multiple times, adjust as needed:
-  base_env = eval_env  # or brax_env.env.env.env
-  fps = 1.0 / base_env.dt / render_every
+  # Render this episode to its own video file.
   traj = rollout[::render_every]
   frames = eval_env.render(
       traj,
@@ -319,8 +296,9 @@ def main(argv):
       width=640,
       scene_option=scene_option,
   )
-  media.write_video("rollout.mp4", frames, fps=fps)
-  print("Rollout video saved as 'rollout.mp4'.")
+  video_name = f"rollout.mp4"
+  media.write_video(video_name, frames, fps=fps)
+  print(f"Rollout video for episode saved as '{video_name}'.")
 
 
 def run():

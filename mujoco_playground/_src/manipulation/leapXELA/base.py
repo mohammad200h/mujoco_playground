@@ -30,6 +30,7 @@ def get_scene_xml(config: config_dict.ConfigDict):
 
   finger_tip_type = config.finger_tip_type
   CUBE_XML = consts.ROOT_PATH / "leapXELA_model" / f"scene_mjx_cube_{finger_tip_type}_mjx.xml"
+  print(f"CUBE_XML: {CUBE_XML}")
   return CUBE_XML.as_posix()
 
 
