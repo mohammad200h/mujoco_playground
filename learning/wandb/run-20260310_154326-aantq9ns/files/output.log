@@ -1,0 +1,46 @@
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/dist-packages/ml_collections/config_dict/config_dict.py", line 952, in __getitem__
+    field = self._fields[key]
+            ~~~~~~~~~~~~^^^^^
+KeyError: 'finger_tip_type'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/dist-packages/ml_collections/config_dict/config_dict.py", line 853, in __getattr__
+    return self[attribute]
+           ~~~~^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/ml_collections/config_dict/config_dict.py", line 958, in __getitem__
+    raise KeyError(self._generate_did_you_mean_message(key, str(e)))
+KeyError: "'finger_tip_type'"
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/mujoco_playground/learning/train_rsl_rl.py", line 291, in <module>
+    run()
+  File "/workspace/mujoco_playground/learning/train_rsl_rl.py", line 287, in run
+    app.run(main)
+  File "/usr/local/lib/python3.11/dist-packages/absl/app.py", line 367, in run
+    _run_main(main, args)
+  File "/usr/local/lib/python3.11/dist-packages/absl/app.py", line 312, in _run_main
+    sys.exit(main(argv))
+             ^^^^^^^^^^
+  File "/workspace/mujoco_playground/learning/train_rsl_rl.py", line 177, in main
+    raw_env = registry.load(
+              ^^^^^^^^^^^^^^
+  File "/workspace/mujoco_playground/mujoco_playground/_src/registry.py", line 55, in load
+    return manipulation.load(env_name, config, config_overrides)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/mujoco_playground/mujoco_playground/_src/manipulation/__init__.py", line 128, in load
+    return _envs[env_name](config=config, config_overrides=config_overrides)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/mujoco_playground/mujoco_playground/_src/manipulation/leapXELA/rotate_z.py", line 71, in __init__
+    xml_path = get_scene_xml(config)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/mujoco_playground/mujoco_playground/_src/manipulation/leapXELA/base.py", line 31, in get_scene_xml
+    finger_tip_type = config.finger_tip_type
+                      ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/ml_collections/config_dict/config_dict.py", line 855, in __getattr__
+    raise AttributeError(e)
+AttributeError: "'finger_tip_type'"

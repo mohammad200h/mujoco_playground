@@ -260,41 +260,40 @@ def main(argv):
   base_env = eval_env  # If wrapped multiple times, adjust as needed.
   fps = 1.0 / base_env.dt / render_every
 
-  for ep in range(num_episodes):
-    rng, rng_reset = jax.random.split(rng)
-    state = jit_reset(rng_reset)
-    rollout = [state]
 
+  rng, rng_reset = jax.random.split(rng)
+  state = jit_reset(rng_reset)
+  rollout = [state]
+  obs = state.obs["state"] if is_dict_obs else state.obs
+  obs_torch = wrapper_torch._jax_to_torch(obs)
+
+  for _ in range(env_cfg.episode_length):
+    with torch.no_grad():
+      actions = policy({"state": obs_torch})
+      actions = torch.clip(actions, -1.0, 1.0)  # from wrapper_torch.py
+    # Step environment
+    state = jit_step(state, wrapper_torch._torch_to_jax(actions.flatten()))
+    rollout.append(state)
     obs = state.obs["state"] if is_dict_obs else state.obs
     obs_torch = wrapper_torch._jax_to_torch(obs)
+    if state.done:
+      break
 
-    for _ in range(env_cfg.episode_length):
-      with torch.no_grad():
-        actions = policy({"state": obs_torch})
-        actions = torch.clip(actions, -1.0, 1.0)  # from wrapper_torch.py
-      # Step environment
-      state = jit_step(state, wrapper_torch._torch_to_jax(actions.flatten()))
-      rollout.append(state)
-      obs = state.obs["state"] if is_dict_obs else state.obs
-      obs_torch = wrapper_torch._jax_to_torch(obs)
-      if state.done:
-        break
+  reward_sum = sum(s.reward for s in rollout)
+  print(f"Episode reward: {reward_sum}")
 
-    reward_sum = sum(s.reward for s in rollout)
-    print(f"Episode {ep} reward: {reward_sum}")
-
-    # Render this episode to its own video file.
-    traj = rollout[::render_every]
-    frames = eval_env.render(
-        traj,
-        camera=_CAMERA.value,
-        height=480,
-        width=640,
-        scene_option=scene_option,
-    )
-    video_name = f"rollout_ep{ep}.mp4"
-    media.write_video(video_name, frames, fps=fps)
-    print(f"Rollout video for episode {ep} saved as '{video_name}'.")
+  # Render this episode to its own video file.
+  traj = rollout[::render_every]
+  frames = eval_env.render(
+      traj,
+      camera=_CAMERA.value,
+      height=480,
+      width=640,
+      scene_option=scene_option,
+  )
+  video_name = f"rollout.mp4"
+  media.write_video(video_name, frames, fps=fps)
+  print(f"Rollout video for episode saved as '{video_name}'.")
 
 
 def run():

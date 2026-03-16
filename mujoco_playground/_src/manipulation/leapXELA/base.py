@@ -26,6 +26,12 @@ from mujoco import mjx
 from mujoco_playground._src import mjx_env
 from mujoco_playground._src.manipulation.leapXELA import leap_hand_constants as consts
 
+def get_scene_xml(config: config_dict.ConfigDict):
+
+  finger_tip_type = config.finger_tip_type
+  CUBE_XML = consts.ROOT_PATH / "leapXELA_model" / f"scene_mjx_cube_{finger_tip_type}_mjx.xml"
+  return CUBE_XML.as_posix()
+
 
 def get_assets() -> Dict[str, bytes]:
   assets = {}
@@ -58,7 +64,13 @@ class LeapHandEnv(mjx_env.MjxEnv):
     self._mj_model.vis.global_.offwidth = 3840
     self._mj_model.vis.global_.offheight = 2160
 
-    self._mjx_model = mjx.put_model(self._mj_model, impl=self._config.impl)
+    device = None
+    if hasattr(self._config, "device_rank") and self._config.device_rank is not None:
+      gpu_devices = jax.devices("gpu")
+      device = gpu_devices[self._config.device_rank]
+    self._mjx_model = mjx.put_model(
+        self._mj_model, impl=self._config.impl, device=device
+    )
     self._xml_path = xml_path
 
   # Sensor readings.

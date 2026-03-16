@@ -1,0 +1,25 @@
+{
+  "os":  "Linux-6.17.0-14-generic-x86_64-with-glibc2.35",
+  "python":  "CPython 3.11.14",
+  "startedAt":  "2026-03-10T18:13:06.746206Z",
+  "args":  [
+    "--env_name=LeapXELACubeRotateZAxis",
+    "--impl",
+    "warp",
+    "--use_wandb",
+    "True",
+    "--device",
+    "cuda:0"
+  ],
+  "program":  "/workspace/mujoco_playground/learning/train_rsl_rl.py",
+  "codePath":  "train_rsl_rl.py",
+  "codePathLocal":  "train_rsl_rl.py",
+  "git":  {
+    "remote":  "git@github.com:mohammad200h/mujoco_playground.git"
+  },
+  "email":  "mohammad200h@hotmail.com",
+  "root":  "/workspace/mujoco_playground/learning",
+  "host":  "mamaad",
+  "executable":  "/usr/bin/python3",
+  "writerId":  "qfiuvhrr4fvfwxaqmzzzeqk7n6jf2sai"
+}

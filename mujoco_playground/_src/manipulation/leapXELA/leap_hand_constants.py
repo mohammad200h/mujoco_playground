@@ -17,7 +17,7 @@
 from mujoco_playground._src import mjx_env
 
 ROOT_PATH = mjx_env.ROOT_PATH / "manipulation" / "leapXELA"
-CUBE_XML = ROOT_PATH / "leapXELA_model" / "scene_mjx_cube.xml"
+
 
 NQ = 16
 NV = 16

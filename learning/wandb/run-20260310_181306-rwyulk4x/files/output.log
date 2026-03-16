@@ -1,0 +1,32 @@
+scene_xml:: /workspace/mujoco_playground/mujoco_playground/_src/manipulation/leapXELA/leapXELA_model/scene_mjx_cube_Box_mjx.xml
+Traceback (most recent call last):
+  File "/workspace/mujoco_playground/learning/train_rsl_rl.py", line 300, in <module>
+    run()
+  File "/workspace/mujoco_playground/learning/train_rsl_rl.py", line 296, in run
+    app.run(main)
+  File "/usr/local/lib/python3.11/dist-packages/absl/app.py", line 367, in run
+    _run_main(main, args)
+  File "/usr/local/lib/python3.11/dist-packages/absl/app.py", line 312, in _run_main
+    sys.exit(main(argv))
+             ^^^^^^^^^^
+  File "/workspace/mujoco_playground/learning/train_rsl_rl.py", line 186, in main
+    raw_env = registry.load(
+              ^^^^^^^^^^^^^^
+  File "/workspace/mujoco_playground/mujoco_playground/_src/registry.py", line 55, in load
+    return manipulation.load(env_name, config, config_overrides)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/mujoco_playground/mujoco_playground/_src/manipulation/__init__.py", line 128, in load
+    return _envs[env_name](config=config, config_overrides=config_overrides)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/mujoco_playground/mujoco_playground/_src/manipulation/leapXELA/rotate_z.py", line 74, in __init__
+    super().__init__(
+  File "/workspace/mujoco_playground/mujoco_playground/_src/manipulation/leapXELA/base.py", line 57, in __init__
+    super().__init__(config, config_overrides)
+  File "/workspace/mujoco_playground/mujoco_playground/_src/mjx_env.py", line 279, in __init__
+    self._config.update_from_flattened_dict(config_overrides)
+  File "/usr/local/lib/python3.11/dist-packages/ml_collections/config_dict/config_dict.py", line 1507, in update_from_flattened_dict
+    self[child] = value
+    ~~~~^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/ml_collections/config_dict/config_dict.py", line 871, in __setitem__
+    raise KeyError(
+KeyError: 'Key "device_rank" does not exist and cannot be added since the config is locked. Other fields present: "{\'ctrl_dt\': 0.05, \'sim_dt\': 0.01, \'action_scale\': 0.6, \'action_repeat\': 1, \'episode_length\': 500, \'early_termination\': True, \'history_len\': 1, \'noise_config\': level: 1.0\nscales:\n  joint_pos: 0.05\n, \'reward_config\': scales:\n  action_rate: 0.0\n  angvel: 1.0\n  energy: 0.0\n  linvel: 0.0\n  pose: 0.0\n  termination: -100.0\n  torques: 0.0\n, \'impl\': \'warp\', \'nconmax\': 245760, \'njmax\': 170, \'finger_tip_type\': \'Box\'}"'
