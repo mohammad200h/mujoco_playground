@@ -8,3 +8,4 @@ checkpoints/
 logs
 rollout*
 trained_models/
+learning/wandb/
