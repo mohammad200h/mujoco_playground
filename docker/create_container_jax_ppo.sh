@@ -16,25 +16,23 @@ MULTI_GPU=${MULTI_GPU:-false}
 
 if  [[ "$MULTI_GPU" == "true" ]]; then
   echo "Running in multi-GPU mode"
-  CONTAINER_NAME=mujocoplayground_multi_gpu
+  CONTAINER_NAME=mujocoplayground_jax_ppo_multi_gpu
 
   sudo docker run --runtime=nvidia -it --name ${CONTAINER_NAME} \
-      -v $(pwd)/../../mujoco_playground:/workspace/mujoco_playground \
       -e DISPLAY -e LOCAL_USER_ID=$(id -u) -e LOCAL_GID=$(id -g) \
       -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
       -e MUJOCO_GL=egl \
-      --net=host  --privileged mujocoplayground
+      --net=host  --privileged mujocoplayground_jax_ppo
 else
   echo "Running in single-GPU mode"
-  CONTAINER_NAME=mujocoplayground_${GPU_ID}
+  CONTAINER_NAME=mujocoplayground_jax_ppo_${GPU_ID}
 
   sudo docker run --runtime=nvidia -it --name ${CONTAINER_NAME} \
-    -v $(pwd)/../../mujoco_playground:/workspace/mujoco_playground \
     -e DISPLAY -e LOCAL_USER_ID=$(id -u) -e LOCAL_GID=$(id -g) \
     -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
     -e MUJOCO_GL=egl \
     -e CUDA_VISIBLE_DEVICES=${GPU_ID} \
     -e MUJOCO_PLAYGROUND_WARP_SINGLE_GPU=${GPU_ID} \
-    --net=host  --privileged mujocoplayground
+    --net=host  --privileged mujocoplayground_jax_ppo
 
 fi
