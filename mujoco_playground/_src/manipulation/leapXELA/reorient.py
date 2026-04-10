@@ -72,7 +72,7 @@ def default_config() -> config_dict.ConfigDict:
       impl='jax',
       nconmax=30 * 8192,
       njmax=220,
-      finger_tip_type='Box'
+      finger_tip_type='CoACD'
   )
 
 

@@ -56,9 +56,9 @@ def default_config() -> config_dict.ConfigDict:
           ),
       ),
       impl='jax',
-      nconmax=30 * 8192,
-      njmax=180,
-      finger_tip_type='Box'
+      nconmax=int(30 * 8192/2),
+      njmax=200,
+      finger_tip_type='CoACD'
   )
 
 

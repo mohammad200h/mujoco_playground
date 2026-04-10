@@ -36,9 +36,21 @@ RUN git clone https://github.com/google-deepmind/mujoco_playground.git && cd muj
 RUN cd /workspace/mujoco_playground && \
     pip3 install -e "." && \
     pip3 install --upgrade "jax[cuda12]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
-# RUN cd /workspace/mujoco_playground && pip3 install -r docker/requirements.txt
 #####Installing terminator ######
 RUN apt update && apt-get install -y terminator
+###### INStALL LeapXELA ENV ########
+ARG LEAPXELA_CACHEBUST=1
+RUN echo "cachebust=${LEAPXELA_CACHEBUST}" && \
+    cd /workspace/mujoco_playground/mujoco_playground/_src/manipulation/ && \
+    git clone https://github.com/mohammad200h/leapXELA.git
+RUN echo "cachebust=${LEAPXELA_CACHEBUST}" && \
+    cd /workspace/mujoco_playground/mujoco_playground/_src/manipulation/leapXELA && \
+    git clone https://github.com/mohammad200h/leapXELA_model.git
+RUN echo "cachebust=${LEAPXELA_CACHEBUST}" && \
+    cd /workspace/mujoco_playground/mujoco_playground/_src/manipulation/leapXELA && \
+    bash overwrite_config.sh --force
+
+
 
 ###### Shell #######
 CMD ["/bin/bash"]

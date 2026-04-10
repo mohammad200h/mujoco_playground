@@ -4,12 +4,12 @@ build-backend = "hatchling.build"
 
 [project]
 name = "playground"
-version = "0.1.0"
+version = "0.0.2"
 readme = "README.md"
 authors = [
     {name = "Google DeepMind", email = "mujoco@deepmind.com"},
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 dynamic = ["description"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -17,59 +17,37 @@ classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
-    "absl-py",
-    "brax>=0.12.5",
     "etils",
     "flax",
-    "jax== 0.5",
+    "jax==0.4.33",
     "lxml",
-    "mediapy",
     "ml_collections",
-    "mujoco-mjx==3.4",
-    "mujoco==3.4",
-    "warp-lang==1.11",
-    "orbax-checkpoint>=0.11.22",
+    "mujoco-mjx==3.2.7",
+    "mujoco>=3.2.7",
     "tqdm",
+    "brax>=0.12.1",
 ]
-keywords = ["mjx", "mujoco", "sim2real", "reinforcement learning"]
-
-[[tool.uv.index]]
-name = "mujoco"
-url = "https://py.mujoco.org"
-explicit = true
-
-[[tool.uv.index]]
-name = "nvidia"
-url = "https://pypi.nvidia.com"
-explicit = true
-
-[tool.uv.sources]
-mujoco = { index = "mujoco" }
-warp-lang = { index = "nvidia" }
-mujoco-mjx = { git = "https://github.com/google-deepmind/mujoco", rev = "main", subdirectory = "mjx" }
+keywords = ["mjx", "mujoco", "dm_control"]
 
 [project.optional-dependencies]
-cuda = [
-    "jax[cuda12]",
-]
 test = [
     "absl-py",
-    "dm_control",
     "pytest",
-    "pytest-xdist",
+    "dm_control",
 ]
 notebooks = [
     "matplotlib",
-    "jupyter",
+    "mediapy",
 ]
 dev = [
-    "playground[test]",
+    "mujoco_playground[test]",
     "mypy",
     "pyink",
     "pytype",
@@ -78,27 +56,13 @@ dev = [
     "pylint",
     "pytest-xdist",
 ]
-learning = [
-    "rsl-rl-lib==3.0.1",
-    "wandb",
-    "tensorboard==2.20.0"
-]
 all = [
-    "playground[dev]",
-    "playground[cuda]",
-    "playground[notebooks]",
-    "playground[learning]",
+    "mujoco_playground[dev]",
+    "mujoco_playground[notebooks]",
 ]
-
-[tool.hatch.metadata]
-allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["mujoco_playground", "learning"]
-
-[project.scripts]
-train-jax-ppo = "learning.train_jax_ppo:run"
-train-rsl-ppo = "learning.train_rsl_rl:run"
+packages = ["mujoco_playground"]
 
 [tool.ruff]
 lint.select = [
@@ -135,8 +99,11 @@ warn_unused_configs = true
 exclude = ["scripts/", "mujoco_menagerie/"]
 
 [tool.pytest.ini_options]
+addopts = [
+    "--ignore=mujoco_menagerie",
+]
 testpaths = [
-    "mujoco_playground/_src/",
+    "tests",
 ]
 
 [tool.isort]
@@ -175,13 +142,9 @@ exclude = [
 output = ".pytype"
 report_errors = true
 
-[tool.pylint]
-ignore-paths = 'mujoco_playground/experimental/**$'
-
 [tool.hatch.build]
 include = [
     "mujoco_playground/__init__.py",
     "mujoco_playground/_src/**/*",
     "mujoco_playground/config/**/*",
-    "learning/**/*",
 ]

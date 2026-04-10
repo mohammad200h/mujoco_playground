@@ -16,6 +16,7 @@ To train with brax PPO, you can use the `train_jax_ppo.py` script. This script u
 
 ```bash
 python train_jax_ppo.py --env_name=CartpoleBalance
+python3 train_jax_ppo.py --env_name=LeapCubeReorient
 ```
 
 To train a vision-based policy using pixel observations:

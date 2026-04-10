@@ -12,5 +12,6 @@ sudo docker build \
     --build-arg UID=$USER_ID \
     --build-arg GID=$GROUP_ID \
     -f Dockerfile_JAX_PPO \
+    --build-arg LEAPXELA_CACHEBUST="$(date +%s)" \
     -t mujocoplayground_jax_ppo ..
 
